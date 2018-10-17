@@ -45,14 +45,15 @@ class Main(QtWidgets.QMainWindow) :
 
 		#turbulent = np.fromiter(map(partial(turbulence, self.noise, 64),
 		#	np.ndindex(self.noise.shape)), dtype=np.uint8)
-		#turbulent = turbulent.reshape(self.noise.shape)
-		#qim = bw_image(turbulent)
-		#qpm = QtGui.QPixmap(qim)
-		#self.pixmaps.append(qpm)
+		turbulent = m_turbulence(self.noise, 64)
+		turbulent = turbulent.reshape(self.noise.shape)
+		qim = bw_image(turbulent)
+		qpm = QtGui.QPixmap(qim)
+		self.pixmaps.append(qpm)
 
-		#turbulent_blue = blueify(turbulent)
-		#qpm = QtGui.QPixmap(turbulent_blue)
-		#self.pixmaps.append(qpm)
+		turbulent_blue = blueify(turbulent)
+		qpm = QtGui.QPixmap(turbulent_blue)
+		self.pixmaps.append(qpm)
 
 		marbleish = marble_base(rows)
 		qpm  = QtGui.QPixmap(bw_image(marbleish))
@@ -143,48 +144,40 @@ def smooth_noise(m,xy) :
 
 def zoomed_smooth_noise(m, zoom) :
 
+	# m assumed 2D
 	R,C = m.shape
 
+	idxs = np.arange(R, dtype=np.float).repeat(C).reshape(R,C)
 
-	idxs = np.arange(R).repeat(C).reshape(R,C)
+	# get ranges corresonding to the top left (1/zoom)th
+	# portion of the matrix
+	f, i = np.modf(idxs / zoom)
+	i = i.astype(np.int)
+	xi, yi = i, i.T
+	xf, yf = f, f.T
 
-	x = idxs / zoom
-	y = idxs.T / zoom
+	# down, right
+	d, r = xi, yi
 
+	# up, left (negative indices allowed!)
+	u = (d-1)
+	l = (r-1)
 
-	xr = x.astype(np.uint8)
-	yr = y.astype(np.uint8)
-
-	fx = x - xr
-	fy = y - yr
-
-	x1 = (xr + R) % R
-	y1 = (yr + C) % C
-
-	x2 = (x1 + R - 1) % R
-	y2 = (y1 + C - 1) % C
-
-
-	v = 0
-
-	v += fx * fy * m[x1,y1]
-	v += (1-fx) * fy * m[x2,y1]
-	v += fx * (1-fy) * m[x1,y2]
-	v += (1-fx) * (1-fy) * m[x2,y2]
-
+	v  =    xf  *    yf  * m[d,r]
+	v += (1-xf) *    yf  * m[u,r]
+	v +=    xf  * (1-yf) * m[d,l]
+	v += (1-xf) * (1-yf) * m[u,l]
 
 	return v.astype(np.uint8)
 
 
-
-
 def m_turbulence(m, size) :
 
-	v = np.zeros_like(m)
+	v = np.zeros_like(m,dtype=np.float)
 	isize = size
 
 	while size >= 1 :
-		v += m_smooth_noise(m) * size
+		v += zoomed_smooth_noise(m, size) * size
 		size /= 2
 
 	return (v / (2*isize)).astype(np.uint8)
