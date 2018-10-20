@@ -27,25 +27,19 @@ class Main(QtWidgets.QMainWindow) :
 		qpm = QtGui.QPixmap(qim)
 		self.pixmaps.append(qpm)
 
+		zoomedSmooth = zoomed_smooth_noise(self.noise, 2)
+		zoomedSmooth = zoomedSmooth.reshape(self.noise.shape)
+		qim = bw_image(zoomedSmooth)
+		qpm = QtGui.QPixmap(qim)
+		self.pixmaps.append(qpm)
+
 		smoothed = blur(self.noise)
 		qim = bw_image(smoothed)
 		qpm = QtGui.QPixmap(qim)
 		self.pixmaps.append(qpm)
 
 
-		from functools import partial
-		#zoomedSmooth = np.fromiter(map(partial(smooth_noise, self.noise),
-		#	map(lambda xy : (xy[0]/8, xy[1]/8), np.ndindex(self.noise.shape))), dtype=np.uint8)
-		zoomedSmooth = zoomed_smooth_noise(self.noise, 8)
-		zoomedSmooth = zoomedSmooth.reshape(self.noise.shape)
-		qim = bw_image(zoomedSmooth)
-		qpm = QtGui.QPixmap(qim)
-		self.pixmaps.append(qpm)
-
-
-		#turbulent = np.fromiter(map(partial(turbulence, self.noise, 64),
-		#	np.ndindex(self.noise.shape)), dtype=np.uint8)
-		turbulent = m_turbulence(self.noise, 64)
+		turbulent = turbulence(self.noise, 64)
 		turbulent = turbulent.reshape(self.noise.shape)
 		qim = bw_image(turbulent)
 		qpm = QtGui.QPixmap(qim)
@@ -58,16 +52,6 @@ class Main(QtWidgets.QMainWindow) :
 		marbleish = marble_base(rows)
 		qpm  = QtGui.QPixmap(bw_image(marbleish))
 		self.pixmaps.append(qpm)
-
-		"""
-		from functools import partial
-		zoomed = np.fromiter(map(partial(blur_zoom, self.noise, 8),
-		np.ndindex(self.noise.shape)), dtype=np.uint8)
-		zoomed = np.reshape(zoomed, self.noise.shape)
-		qim = bw_image(zoomed)
-		qpm = QtGui.QPixmap(qim)
-		self.pixmaps.append(qpm)
-		"""
 
 		self.updatePixmap(0)
 
@@ -153,25 +137,23 @@ def zoomed_smooth_noise(m, zoom) :
 	# portion of the matrix
 	f, i = np.modf(idxs / zoom)
 	i = i.astype(np.int)
-	xi, yi = i, i.T
+	x, y = i, i.T
 	xf, yf = f, f.T
 
-	# down, right
-	d, r = xi, yi
 
 	# up, left (negative indices allowed!)
-	u = (d-1)
-	l = (r-1)
+	u = (x-1)
+	l = (y-1)
 
-	v  =    xf  *    yf  * m[d,r]
-	v += (1-xf) *    yf  * m[u,r]
-	v +=    xf  * (1-yf) * m[d,l]
+	v  =    xf  *    yf  * m[x,y]
+	v += (1-xf) *    yf  * m[u,y]
+	v +=    xf  * (1-yf) * m[x,l]
 	v += (1-xf) * (1-yf) * m[u,l]
 
 	return v.astype(np.uint8)
 
 
-def m_turbulence(m, size) :
+def turbulence(m, size) :
 
 	v = np.zeros_like(m,dtype=np.float)
 	isize = size
@@ -181,21 +163,6 @@ def m_turbulence(m, size) :
 		size /= 2
 
 	return (v / (2*isize)).astype(np.uint8)
-
-
-def turbulence(m, size, xy) :
-
-	v = 0
-	isize = size
-
-	x,y=xy
-
-	while size >= 1 :
-		v += smooth_noise(m, (x/size, y/size)) * size
-		size /= 2
-
-	return int(v / (2*isize))
-
 
 
 #smoothed = np.empty((rows, cols))
