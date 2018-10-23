@@ -19,42 +19,36 @@ class Main(QtWidgets.QMainWindow) :
 
 		self.show()
 
+	def addPixmap(self, generator, bw=True) :
+
+		data = generator()
+		if bw :
+			data = data.astype(np.uint8)
+			im = bw_image(data)
+		else :
+			pass
+
+		pixmap = QtGui.QPixmap(im)
+		self.pixmaps.append(pixmap)
+
+
+
 	def createPixmaps(self) :
 		self.pixmaps = []
 
-		self.noise = np.random.randint(256, size=(rows, cols), dtype=np.uint8)
-		qim = bw_image(self.noise)
-		qpm = QtGui.QPixmap(qim)
-		self.pixmaps.append(qpm)
+		from functools import partial
 
-		zoomedSmooth = zoomed_smooth_noise(self.noise, 2)
-		zoomedSmooth = zoomedSmooth.reshape(self.noise.shape)
-		qim = bw_image(zoomedSmooth)
-		qpm = QtGui.QPixmap(qim)
-		self.pixmaps.append(qpm)
+		data = np.random.randint(256, size=(rows, cols), dtype=np.uint8)
+		self.noise = data
 
-		smoothed = blur(self.noise)
-		qim = bw_image(smoothed)
-		qpm = QtGui.QPixmap(qim)
-		self.pixmaps.append(qpm)
-
-
-		turbulent = turbulence(self.noise, 64)
-		turbulent = turbulent.reshape(self.noise.shape)
-		qim = bw_image(turbulent)
-		qpm = QtGui.QPixmap(qim)
-		self.pixmaps.append(qpm)
-
-		turbulent_blue = blueify(turbulent)
-		qpm = QtGui.QPixmap(turbulent_blue)
-		self.pixmaps.append(qpm)
-
-		marbleish = marble_base(rows)
-		qpm  = QtGui.QPixmap(bw_image(marbleish))
-		self.pixmaps.append(qpm)
+		self.addPixmap(lambda : data)
+		self.addPixmap(partial(zoomed_smooth_noise, data, 4))
+		self.addPixmap(partial(blur, data))
+		self.addPixmap(partial(turbulence, data, 64))
+		self.addPixmap(partial(marble_base, rows))
+		self.addPixmap(partial(marble_true, data))
 
 		self.updatePixmap(0)
-
 
 	def createWidgets(self) :
 		self.label = QtWidgets.QLabel()
@@ -103,29 +97,6 @@ def blur(mat) :
 
 	return ((l+r+b+t)//4).astype(np.uint8)
 
-def smooth_noise(m,xy) :
-
-	R,C = m.shape
-	x,y=xy
-
-	fx = x - int(x)
-	fy = y - int(y)
-
-
-	x1 = (int(x) + R) % R
-	y1 = (int(y) + C) % C
-
-	x2 = (x1 + R - 1) % R
-	y2 = (y1 + C - 1) % C
-
-	v = 0
-	v += fx * fy * m[x1,y1]
-	v += (1-fx) * fy * m[x2,y1]
-	v += fx * (1-fy) * m[x1,y2]
-	v += (1-fx) * (1-fy) * m[x2,y2]
-
-	return int(v)
-
 def zoomed_smooth_noise(m, zoom) :
 
 	# m assumed 2D
@@ -137,7 +108,7 @@ def zoomed_smooth_noise(m, zoom) :
 	# portion of the matrix
 	f, i = np.modf(idxs / zoom)
 	i = i.astype(np.int)
-	x, y = i, i.T
+	x, y = i, i.	T
 	xf, yf = f, f.T
 
 
@@ -150,8 +121,7 @@ def zoomed_smooth_noise(m, zoom) :
 	v +=    xf  * (1-yf) * m[x,l]
 	v += (1-xf) * (1-yf) * m[u,l]
 
-	return v.astype(np.uint8)
-
+	return v
 
 def turbulence(m, size) :
 
@@ -162,17 +132,50 @@ def turbulence(m, size) :
 		v += zoomed_smooth_noise(m, size) * size
 		size /= 2
 
-	return (v / (2*isize)).astype(np.uint8)
+	return v / (2*isize)
 
 
-#smoothed = np.empty((rows, cols))
-#for idxs in np.ndindex(rows, cols) :
-#	smoothed[idxs] = smooth(*idxs)
+def bw_image(arr) :
+	return QtGui.QImage(arr[...,np.newaxis], arr.shape[1], arr.shape[0], arr.shape[1],
+	QtGui.QImage.Format_Grayscale8)
 
+def blueify(arr) :
+	narr = arr
+	# go from grayscale to RGB
+	# R = 0, G = 0
+	arr  = np.full((*narr.shape, 3), 0, dtype=np.uint8)
+	# set blue (invert)
+	arr[...,2] = arr
+	return QtGui.QImage(arr, arr.shape[1], arr.shape[0], arr.shape[1]*3,
+	QtGui.QImage.Format_RGB888)
 
-#smoothed = np.fromiter(map(smooth, np.ndindex(rows, cols)), dtype=np.uint8)
-#smoothed = np.reshape(smoothed, (rows, cols))
+def marble_base(n) :
 
+	arr = np.arange(n).repeat(n).reshape((n,n))
+	arr = arr + arr.T
+
+	return (128*(np.sin(arr)+1)).astype(np.uint8)
+
+def marble_true(noise) :
+
+	R,C = noise.shape
+	arr = np.arange(R).repeat(C).reshape((R,C))
+	x = arr
+	y = arr.T
+
+	# period of sinusoidal
+	xp = 5.0
+	yp = 10.0
+
+	# turbulence power
+	power = 5.0
+	size = 64.0
+
+	xy = x * xp / R + y * yp / C + power * turbulence(noise, size) / 256
+	#v = 128 * (1+np.sin(xy * np.pi))
+	v = 256 * np.abs(np.sin(xy * np.pi))
+
+	return v
 
 def bw_image(arr) :
 	return QtGui.QImage(arr, arr.shape[1], arr.shape[0], arr.shape[1],
@@ -187,36 +190,6 @@ def blueify(arr) :
 	arr[...,2] = 255-narr
 	return QtGui.QImage(arr, arr.shape[1], arr.shape[0], arr.shape[1]*3,
 	QtGui.QImage.Format_RGB888)
-
-def marble_base(n) :
-
-	arr = np.arange(n).repeat(n).reshape((n,n))
-	arr = arr + arr.T
-
-	return (128*(np.sin(arr)+1)).astype(np.uint8)
-
-def marble_true(noise) :
-
-	arr = np.arange(n).repeat(n).reshape((n,n))
-	xs = arr.T
-	ys = arr
-
-
-	r,c = noise.shape
-
-
-	x_per = 5.0
-	y_per = 10.0
-
-
-	power = 5.0
-	size = 32.0
-
-
-	res = xs * x_per / r + y * y_per / c + power * turbulence(size) / 256
-
-
-	return (128*(np.sin(arr)+1)).astype(np.uint8)
 
 if __name__ == '__main__' :
 	app = QtWidgets.QApplication([])
