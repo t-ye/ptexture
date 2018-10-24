@@ -119,14 +119,14 @@ def zoomed_smooth_noise(zoom, m) :
 	# m assumed 2D
 	R,C = m.shape
 
-	idxs = np.arange(R, dtype=np.float).repeat(C).reshape(R,C)
+	#idxs = np.arange(R, dtype=np.float).repeat(C).reshape(R,C)
+	idxs = np.indices(m.shape)
 
 	# get ranges corresonding to the top left (1/zoom)th
 	# portion of the matrix
 	f, i = np.modf(idxs / zoom)
-	i = i.astype(np.int)
-	x, y = i, i.T
-	xf, yf = f, f.T
+	x, y = i.astype(np.int)
+	xf, yf = f
 
 
 	# up, left (negative indices allowed!)
@@ -176,9 +176,7 @@ def marble_base(n) :
 def marble_true(noise) :
 
 	R,C = noise.shape
-	arr = np.arange(R).repeat(C).reshape((R,C))
-	x = arr
-	y = arr.T
+	x,y=np.indices((R,C))
 
 	# period of sinusoidal
 	xp = 5.0
