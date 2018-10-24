@@ -1,6 +1,7 @@
 import PyQt5.QtWidgets as QtWidgets
 import PyQt5.QtGui as QtGui
 import numpy as np
+from hsv import hsv2rgb
 
 #black = np.zeros((300, 300), dtype=np.uint8)
 rows = 1080
@@ -32,7 +33,7 @@ class Main(QtWidgets.QMainWindow) :
 				base = lambda : self.base
 
 			if imgfy is None :
-				imgfy = arr_to_bwim
+				imgfy = arr_to_bandw
 
 			arr = generator(base()) if base is not None else generator()
 
@@ -63,6 +64,8 @@ class Main(QtWidgets.QMainWindow) :
 		self.addPixmap('marble base', partial(marble_base, rows, cols), None)
 		self.addPixmap('marble', marble_true)
 		self.addPixmap('wood base', partial(wood_base, rows, cols), None)
+		self.addPixmap('wood', wood, imgfy=arr_to_browns)
+		self.addPixmap('weird base', partial(weird_base, rows, cols), None, imgfy=arr_to_reds)
 
 		self.updatePixmap(0)
 
@@ -95,9 +98,7 @@ class Main(QtWidgets.QMainWindow) :
 		changer.addWidget(self.prev)
 		changer.addWidget(self.comboBox)
 		changer.addWidget(self.next)
-		#self.layout.addWidget(self.next)
-		#self.layout.addWidget(self.prev)
-		#self.layout.addWidget(self.comboBox)
+
 		self.layout.addWidget(changer.parent())
 		self.layout.addWidget(self.label)
 
@@ -221,10 +222,11 @@ def wood_base(R,C) :
 
 def wood(noise) :
 
-	per = 12.0 # number of rings
-	power = 0.1 # twists
+	period = 12.0 # number of rings
+	power = 0.05 # twists
 	size = 32.0 # turbulence detail
 
+	R,C = noise.shape
 	x,y = np.indices((R,C))
 
 	x = (x - R / 2) / R
@@ -232,14 +234,29 @@ def wood(noise) :
 	d = np.sqrt(x**2 + y**2) + power * turbulence(size, noise) / 256
 	return 128 * np.abs(np.sin(2 * period * d * np.pi))
 
+def weird_base(R, C) :
 
+	arr = np.indices((R,C))
 
+	f = 64*(np.sin(arr[0] / np.pi)+1 + np.sin(arr[1] / np.pi)+1)
 
+	return f
 
-
-def arr_to_bwim(arr) :
+def arr_to_bandw(arr) :
 	return QtGui.QImage(arr, arr.shape[1], arr.shape[0], arr.shape[1],
 	QtGui.QImage.Format_Grayscale8)
+
+def arr_to_reds(arr) :
+	narr = arr
+	arr = np.zeros((*narr.shape, 3), dtype=np.float)
+	# 8-bit space to degrees, then all colors to shades of red/yellow
+	arr[...,0] = 360/256 * narr * 60/360
+	#arr[...,0] = 60/256 * narr
+	arr[...,1] = 1.0
+	arr[...,2] = 1.0
+	arr = hsv2rgb(arr)
+	return QtGui.QImage(arr, arr.shape[1], arr.shape[0], arr.shape[1]*3,
+	QtGui.QImage.Format_RGB888)
 
 def arr_to_blues(arr) :
 	narr = arr
@@ -250,6 +267,17 @@ def arr_to_blues(arr) :
 	arr[...,2] = narr
 	return QtGui.QImage(arr, arr.shape[1], arr.shape[0], arr.shape[1]*3,
 	QtGui.QImage.Format_RGB888)
+
+def arr_to_browns(arr) :
+	narr = arr
+	arr = np.full((*arr.shape, 3), 0, dtype=np.uint8)
+	arr[...,0] = np.uint8(narr + 80)
+	arr[...,1] = np.uint8(narr + 30)
+	arr[...,2] = 30
+	return QtGui.QImage(arr, arr.shape[1], arr.shape[0], arr.shape[1]*3,
+	QtGui.QImage.Format_RGB888)
+
+
 
 if __name__ == '__main__' :
 	app = QtWidgets.QApplication([])
