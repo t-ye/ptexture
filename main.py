@@ -3,10 +3,12 @@ import PyQt5.QtGui as QtGui
 import numpy as np
 
 #black = np.zeros((300, 300), dtype=np.uint8)
-rows = 100
-cols = 100
+rows = 1080
+cols = 1920
 
 class Main(QtWidgets.QMainWindow) :
+
+	sentinel = object()
 
 	def __init__(self) :
 
@@ -19,21 +21,30 @@ class Main(QtWidgets.QMainWindow) :
 
 		self.show()
 
-	def addPixmap(self, generator, bw=True) :
+	def addPixmap(self, generator, base=sentinel, imgfy=None) :
 
-		data = generator()
-		if bw :
-			data = data.astype(np.uint8)
-			im = bw_image(data)
-		else :
-			pass
+		def pixmapGenerator() :
+			nonlocal base
+			nonlocal generator
+			nonlocal imgfy
 
-		pixmap = QtGui.QPixmap(im)
-		self.pixmaps.append(pixmap)
+			if base is Main.sentinel :
+				base = lambda : self.base
 
+			if imgfy is None :
+				imgfy = arr_to_bwim
 
+			arr = generator(base()) if base is not None else generator()
+
+			im = imgfy(arr.astype(np.uint8))
+			pixmap = QtGui.QPixmap(im)
+
+			return pixmap
+
+		self.pixmaps.append(pixmapGenerator)
 
 	def createPixmaps(self) :
+
 		self.pixmaps = []
 
 		from functools import partial
@@ -41,19 +52,21 @@ class Main(QtWidgets.QMainWindow) :
 		data = np.random.randint(256, size=(rows, cols), dtype=np.uint8)
 		self.noise = data
 
-		self.addPixmap(lambda : data)
-		self.addPixmap(partial(zoomed_smooth_noise, data, 4))
-		self.addPixmap(partial(blur, data))
-		self.addPixmap(partial(turbulence, data, 64))
-		self.addPixmap(partial(marble_base, rows))
-		self.addPixmap(partial(marble_true, data))
+		self.base = data
+
+		self.addPixmap(lambda x : x)
+		self.addPixmap(partial(zoomed_smooth_noise, 4))
+		self.addPixmap(blur)
+		self.addPixmap(partial(turbulence, 64))
+		self.addPixmap(partial(turbulence, 64), imgfy=arr_to_blues)
+		self.addPixmap(partial(marble_base, rows), None)
+		self.addPixmap(marble_true)
 
 		self.updatePixmap(0)
 
 	def createWidgets(self) :
 		self.label = QtWidgets.QLabel()
 		self.label.setScaledContents(True) # auto resize
-
 
 		self.button1 = QtWidgets.QPushButton('new noise')
 		self.button1.clicked.connect(lambda : self.createPixmaps())
@@ -74,7 +87,12 @@ class Main(QtWidgets.QMainWindow) :
 
 	def updatePixmap(self, idx) :
 		self.pixmap_idx = idx
-		self.label.setPixmap(self.pixmaps[self.pixmap_idx])
+
+		# eval
+		pm = self.pixmaps[self.pixmap_idx]()
+		self.pixmaps[self.pixmap_idx] = lambda : pm
+
+		self.label.setPixmap(pm)
 
 	def cyclePixmap(self) :
 		self.updatePixmap((self.pixmap_idx+1) % len(self.pixmaps))
@@ -86,9 +104,8 @@ def blur(mat) :
 	repborder = np.tile(mat, (3,3))[R-1:2*R+1,C-1:2*C+1]
 
 	# get the matrices that are a result of
-	# moving the central instance of mat left, right
-	# down, and up
-	# cast to 16 bits to prevent later addition overflow
+	# moving the central instance of mat left, right down, and up cast to 16 bits
+	# to prevent later addition overflow
 	l = repborder[1:R+1,:C].astype(np.uint16)
 	r = repborder[1:R+1:,2:]
 	b = repborder[2:,1:C+1]
@@ -97,7 +114,7 @@ def blur(mat) :
 
 	return ((l+r+b+t)//4).astype(np.uint8)
 
-def zoomed_smooth_noise(m, zoom) :
+def zoomed_smooth_noise(zoom, m) :
 
 	# m assumed 2D
 	R,C = m.shape
@@ -108,7 +125,7 @@ def zoomed_smooth_noise(m, zoom) :
 	# portion of the matrix
 	f, i = np.modf(idxs / zoom)
 	i = i.astype(np.int)
-	x, y = i, i.	T
+	x, y = i, i.T
 	xf, yf = f, f.T
 
 
@@ -123,23 +140,23 @@ def zoomed_smooth_noise(m, zoom) :
 
 	return v
 
-def turbulence(m, size) :
+def turbulence(size, m) :
 
 	v = np.zeros_like(m,dtype=np.float)
 	isize = size
 
 	while size >= 1 :
-		v += zoomed_smooth_noise(m, size) * size
+		v += zoomed_smooth_noise(size, m) * size
 		size /= 2
 
 	return v / (2*isize)
 
 
-def bw_image(arr) :
+def arr_to_bwim(arr) :
 	return QtGui.QImage(arr[...,np.newaxis], arr.shape[1], arr.shape[0], arr.shape[1],
 	QtGui.QImage.Format_Grayscale8)
 
-def blueify(arr) :
+def arr_to_blues(arr) :
 	narr = arr
 	# go from grayscale to RGB
 	# R = 0, G = 0
@@ -171,40 +188,30 @@ def marble_true(noise) :
 	power = 5.0
 	size = 64.0
 
-	xy = x * xp / R + y * yp / C + power * turbulence(noise, size) / 256
+	xy = x * xp / R + y * yp / C + power * turbulence(size, noise) / 256
 	#v = 128 * (1+np.sin(xy * np.pi))
 	v = 256 * np.abs(np.sin(xy * np.pi))
 
 	return v
 
-def bw_image(arr) :
+def arr_to_bwim(arr) :
 	return QtGui.QImage(arr, arr.shape[1], arr.shape[0], arr.shape[1],
 	QtGui.QImage.Format_Grayscale8)
 
-def blueify(arr) :
+def arr_to_blues(arr) :
 	narr = arr
 	# go from grayscale to RGB
 	# R = 0, G = 0
-	arr  = np.full((*narr.shape, 3), 0, dtype=np.uint8)
+	arr = np.full((*narr.shape, 3), 0, dtype=np.uint8)
 	# set B
-	arr[...,2] = 255-narr
+	arr[...,2] = narr
 	return QtGui.QImage(arr, arr.shape[1], arr.shape[0], arr.shape[1]*3,
 	QtGui.QImage.Format_RGB888)
 
 if __name__ == '__main__' :
 	app = QtWidgets.QApplication([])
 
-	#label = QtWidgets.QLabel('Hello World!')
 	window = Main()
-
-	#data = QtGui.QPixmap()
-	#data.loadFromData(black, 300*300)
-	#label.setPixmap(data)
-
-
-
-	#label.show()
-
 
 	app.exec_()
 
