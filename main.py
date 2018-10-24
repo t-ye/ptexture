@@ -21,7 +21,7 @@ class Main(QtWidgets.QMainWindow) :
 
 		self.show()
 
-	def addPixmap(self, generator, base=sentinel, imgfy=None) :
+	def addPixmap(self, name, generator, base=sentinel, imgfy=None) :
 
 		def pixmapGenerator() :
 			nonlocal base
@@ -42,6 +42,7 @@ class Main(QtWidgets.QMainWindow) :
 			return pixmap
 
 		self.pixmaps.append(pixmapGenerator)
+		self.comboBox.addItem(name)
 
 	def createPixmaps(self) :
 
@@ -54,13 +55,14 @@ class Main(QtWidgets.QMainWindow) :
 
 		self.base = data
 
-		self.addPixmap(lambda x : x)
-		self.addPixmap(partial(zoomed_smooth_noise, 4))
-		self.addPixmap(blur)
-		self.addPixmap(partial(turbulence, 64))
-		self.addPixmap(partial(turbulence, 64), imgfy=arr_to_blues)
-		self.addPixmap(partial(marble_base, rows), None)
-		self.addPixmap(marble_true)
+		self.addPixmap('noise', lambda x : x)
+		self.addPixmap('zoomed smoothed noise', partial(zoomed_smooth_noise, 4))
+		self.addPixmap('blur', blur)
+		self.addPixmap('turbulence', partial(turbulence, 64))
+		self.addPixmap('blue turbulence', partial(turbulence, 64), imgfy=arr_to_blues)
+		self.addPixmap('marble base', partial(marble_base, rows, cols), None)
+		self.addPixmap('marble', marble_true)
+		self.addPixmap('wood base', partial(wood_base, rows, cols), None)
 
 		self.updatePixmap(0)
 
@@ -68,10 +70,14 @@ class Main(QtWidgets.QMainWindow) :
 		self.label = QtWidgets.QLabel()
 		self.label.setScaledContents(True) # auto resize
 
-		self.button1 = QtWidgets.QPushButton('new noise')
-		self.button1.clicked.connect(lambda : self.createPixmaps())
-		self.button2 = QtWidgets.QPushButton('cycle')
-		self.button2.clicked.connect(lambda : self.cyclePixmap())
+		self.new_noise = QtWidgets.QPushButton('new noise')
+		self.new_noise.clicked.connect(lambda : self.createPixmaps())
+		self.next = QtWidgets.QPushButton('next')
+		self.next.clicked.connect(lambda : self.cyclePixmap())
+		self.prev = QtWidgets.QPushButton('prev')
+		self.prev.clicked.connect(lambda : self.cyclePixmap(-1))
+		self.comboBox =  QtWidgets.QComboBox(self)
+		self.comboBox.currentIndexChanged.connect(lambda i : self.updatePixmap(i))
 
 	def setupLayout(self) :
 		# setup layout
@@ -81,8 +87,10 @@ class Main(QtWidgets.QMainWindow) :
 		self.setCentralWidget(widget)
 
 		# add to layout
-		self.layout.addWidget(self.button1)
-		self.layout.addWidget(self.button2)
+		self.layout.addWidget(self.new_noise)
+		self.layout.addWidget(self.next)
+		self.layout.addWidget(self.prev)
+		self.layout.addWidget(self.comboBox)
 		self.layout.addWidget(self.label)
 
 	def updatePixmap(self, idx) :
@@ -94,8 +102,8 @@ class Main(QtWidgets.QMainWindow) :
 
 		self.label.setPixmap(pm)
 
-	def cyclePixmap(self) :
-		self.updatePixmap((self.pixmap_idx+1) % len(self.pixmaps))
+	def cyclePixmap(self, shift=1) :
+		self.updatePixmap((self.pixmap_idx+shift) % len(self.pixmaps))
 
 def blur(mat) :
 	R,C=mat.shape
@@ -166,12 +174,11 @@ def arr_to_blues(arr) :
 	return QtGui.QImage(arr, arr.shape[1], arr.shape[0], arr.shape[1]*3,
 	QtGui.QImage.Format_RGB888)
 
-def marble_base(n) :
+def marble_base(R,C) :
 
-	arr = np.arange(n).repeat(n).reshape((n,n))
-	arr = arr + arr.T
-
-	return (128*(np.sin(arr)+1)).astype(np.uint8)
+	arr = np.indices((R,C))
+	xy = arr[0] + arr[1]
+	return (128*(np.sin(xy)+1)).astype(np.uint8)
 
 def marble_true(noise) :
 
@@ -188,9 +195,36 @@ def marble_true(noise) :
 
 	xy = x * xp / R + y * yp / C + power * turbulence(size, noise) / 256
 	#v = 128 * (1+np.sin(xy * np.pi))
-	v = 256 * np.abs(np.sin(xy * np.pi))
+	v = 128 * (np.sin(xy * np.pi)+1)
 
 	return v
+
+def wood_base(R,C) :
+
+	arr = np.indices((R,C), dtype=np.float)
+	# move origin to center
+	arr[0] -= R / 2
+	arr[1] -= C / 2
+
+	return 128 * (np.sin(np.sqrt(arr[0] ** 2 + arr[1] ** 2) / np.sqrt(R+C))+1)
+
+def wood(noise) :
+
+	per = 12.0 # number of rings
+	power = 0.1 # twists
+	size = 32.0 # turbulence detail
+
+	x,y = np.indices((R,C))
+
+	x = (x - R / 2) / R
+	y = (y - C / 2) / C
+	d = np.sqrt(x**2 + y**2) + power * turbulence(size, noise) / 256
+	return 128 * np.abs(np.sin(2 * period * d * np.pi))
+
+
+
+
+
 
 def arr_to_bwim(arr) :
 	return QtGui.QImage(arr, arr.shape[1], arr.shape[0], arr.shape[1],
