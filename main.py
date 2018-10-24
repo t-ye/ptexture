@@ -73,9 +73,9 @@ class Main(QtWidgets.QMainWindow) :
 		self.new_noise = QtWidgets.QPushButton('new noise')
 		self.new_noise.clicked.connect(lambda : self.createPixmaps())
 		self.next = QtWidgets.QPushButton('next')
-		self.next.clicked.connect(lambda : self.cyclePixmap())
+		self.next.clicked.connect(lambda : self.updatePixmap(self.pixmap_idx + 1))
 		self.prev = QtWidgets.QPushButton('prev')
-		self.prev.clicked.connect(lambda : self.cyclePixmap(-1))
+		self.prev.clicked.connect(lambda : self.updatePixmap(self.pixmap_idx - 1))
 		self.comboBox =  QtWidgets.QComboBox(self)
 		self.comboBox.currentIndexChanged.connect(lambda i : self.updatePixmap(i))
 
@@ -87,13 +87,26 @@ class Main(QtWidgets.QMainWindow) :
 		self.setCentralWidget(widget)
 
 		# add to layout
+
 		self.layout.addWidget(self.new_noise)
-		self.layout.addWidget(self.next)
-		self.layout.addWidget(self.prev)
-		self.layout.addWidget(self.comboBox)
+
+		widget2 = QtWidgets.QWidget()
+		changer = QtWidgets.QHBoxLayout(widget2)
+		changer.addWidget(self.prev)
+		changer.addWidget(self.comboBox)
+		changer.addWidget(self.next)
+		#self.layout.addWidget(self.next)
+		#self.layout.addWidget(self.prev)
+		#self.layout.addWidget(self.comboBox)
+		self.layout.addWidget(changer.parent())
 		self.layout.addWidget(self.label)
 
 	def updatePixmap(self, idx) :
+
+		if self.comboBox.currentIndex() != idx :
+			self.comboBox.setCurrentIndex(idx)
+			return
+
 		self.pixmap_idx = idx
 
 		# eval
@@ -102,8 +115,6 @@ class Main(QtWidgets.QMainWindow) :
 
 		self.label.setPixmap(pm)
 
-	def cyclePixmap(self, shift=1) :
-		self.updatePixmap((self.pixmap_idx+shift) % len(self.pixmaps))
 
 def blur(mat) :
 	R,C=mat.shape
