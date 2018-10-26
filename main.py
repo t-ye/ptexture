@@ -2,9 +2,11 @@ import PyQt5.QtWidgets as QtWidgets
 import PyQt5.QtGui as QtGui
 import numpy as np
 from hsv import hsv2rgb
+from npqt import arr_to_image
+from color import channelsplit
 
 #black = np.zeros((300, 300), dtype=np.uint8)
-rows = 1080
+rows = 1090
 cols = 1920
 
 class Main(QtWidgets.QMainWindow) :
@@ -21,6 +23,8 @@ class Main(QtWidgets.QMainWindow) :
 		self.setupLayout()
 
 		self.show()
+
+	#def addTexture(self, name, texture, imgfy=None) :
 
 	def addPixmap(self, name, generator, base=sentinel, imgfy=None) :
 
@@ -50,6 +54,8 @@ class Main(QtWidgets.QMainWindow) :
 		self.pixmaps = []
 
 		from functools import partial
+		import ptexture
+		import texturers
 
 		data = np.random.randint(256, size=(rows, cols), dtype=np.uint8)
 		self.noise = data
@@ -57,6 +63,10 @@ class Main(QtWidgets.QMainWindow) :
 		self.base = data
 
 		self.addPixmap('noise', lambda x : x)
+		# noise = ptexture.ptexture(texturers.noise_uint8)
+		# wood = ptexture.ptexture(texturers.wood)
+		# self.addTexture(noise)
+		# self.addTexture(wood)
 		self.addPixmap('zoomed smoothed noise', partial(zoomed_smooth_noise, 4))
 		self.addPixmap('blur', blur)
 		self.addPixmap('turbulence', partial(turbulence, 64))
@@ -65,6 +75,7 @@ class Main(QtWidgets.QMainWindow) :
 		self.addPixmap('marble', marble_true)
 		self.addPixmap('wood base', partial(wood_base, rows, cols), None)
 		self.addPixmap('wood', wood, imgfy=arr_to_browns)
+		self.addPixmap('wood 2', wood, imgfy=arr_to_browns_naive)
 		self.addPixmap('weird base', partial(weird_base, rows, cols), None, imgfy=arr_to_reds)
 
 		self.updatePixmap(0)
@@ -207,7 +218,7 @@ def marble_true(noise) :
 
 	xy = x * xp / R + y * yp / C + power * turbulence(size, noise) / 256
 	#v = 128 * (1+np.sin(xy * np.pi))
-	v = 128 * (np.sin(xy * np.pi)+1)
+	v = 256 * np.abs(np.sin(xy * np.pi))
 
 	return v
 
@@ -255,28 +266,42 @@ def arr_to_reds(arr) :
 	arr[...,1] = 1.0
 	arr[...,2] = 1.0
 	arr = hsv2rgb(arr)
-	return QtGui.QImage(arr, arr.shape[1], arr.shape[0], arr.shape[1]*3,
-	QtGui.QImage.Format_RGB888)
+	return arr_to_image(arr, QtGui.QImage.Format_RGB888)
+
 
 def arr_to_blues(arr) :
-	narr = arr
 	# go from grayscale to RGB
 	# R = 0, G = 0
-	arr = np.full((*narr.shape, 3), 0, dtype=np.uint8)
 	# set B
-	arr[...,2] = narr
-	return QtGui.QImage(arr, arr.shape[1], arr.shape[0], arr.shape[1]*3,
-	QtGui.QImage.Format_RGB888)
+	arr = channelsplit(lambda x : (np.full(x.shape, 0), np.full(x.shape, 0), arr),
+	                   arr)
+	return arr_to_image(arr, QtGui.QImage.Format_RGB888)
 
 def arr_to_browns(arr) :
-	narr = arr
-	arr = np.full((*arr.shape, 3), 0, dtype=np.uint8)
-	arr[...,0] = np.uint8(narr + 80)
-	arr[...,1] = np.uint8(narr + 30)
-	arr[...,2] = 30
-	return QtGui.QImage(arr, arr.shape[1], arr.shape[0], arr.shape[1]*3,
-	QtGui.QImage.Format_RGB888)
+	narr = np.copy(arr)
+	print(np.any(narr < 0))
+	arr = channelsplit(lambda x : (
+		 	np.clip(np.add(x, 80, dtype=np.int16), 0, 255),
+			np.clip(np.add(x, 30, dtype=np.int16), 0, 255),
+			np.full(x.shape, 30)
+		), narr)
+	arr2 = channelsplit(lambda x : (
+			x + 80,
+			x + 30,
+			np.full(x.shape, 30)
+		), narr)
+	print(np.all(arr == arr2))
 
+	return arr_to_image(arr, QtGui.QImage.Format_RGB888)
+
+def arr_to_browns_naive(arr) :
+	arr = channelsplit(lambda x : (
+			x + 80,
+			x + 30,
+			np.full(x.shape, 30)
+		), arr)
+
+	return arr_to_image(arr, QtGui.QImage.Format_RGB888)
 
 
 if __name__ == '__main__' :
