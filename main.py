@@ -108,7 +108,6 @@ class Main(QtWidgets.QMainWindow) :
 		self.addTexture('colorturbulence',
 		                partial_ext(turbulence, zoom=64),
 									  base_name='colornoise')
-		#self.addPixmap('marble base', partial(marble_base, rows, cols))
 		self.addTexture('marblebase',
 		                partial_ext(marble_base, R=rows, C=cols))
 		self.addTexture('marble',
@@ -189,7 +188,9 @@ def blur(**kwargs) :
 	fmt = kwargs['fmt']
 	# get matrix in middle same as base
 	# but with a wraparound border around it
-	repborder = np.tile(base, (3,3,1))[R-1:2*R+1,C-1:2*C+1,:]
+	repborder = np.tile(np.atleast_3d(base), (3,3,1))[R-1:2*R+1,C-1:2*C+1]
+	print(base.shape)
+	print(repborder.shape)
 
 	# get the matrices that are a result of
 	# moving the central instance of base left, right down, and up cast to 16 bits
@@ -199,8 +200,12 @@ def blur(**kwargs) :
 	b = repborder[2:,1:C+1]
 	t = repborder[:R,1:C+1]
 
+	print(l.shape)
+	print(r.shape)
+	print(b.shape)
+	print(t.shape)
 
-	return ((l+r+b+t)/4, fmt)
+	return ((l+r+b+t+np.atleast_3d(base))/5, fmt)
 
 def zoomed_smooth_noise(**kwargs) :
 
@@ -267,7 +272,7 @@ def marble_base(**kwargs) :
 
 	arr = np.indices((R,C))
 	xy = arr[0] + arr[1]
-	return (128*(np.sin(xy)+1), QtGui.QImage.Format_Grayscale8)
+	return (128*(np.sin(xy / np.sqrt(max(R,C)))+1), QtGui.QImage.Format_Grayscale8)
 
 def marble_true(**kwargs) :
 
