@@ -32,7 +32,7 @@ class Main(QtWidgets.QMainWindow) :
 											imgfy : Callable[[np.ndarray], QtGui.QImage] = None) :
 
 		# allow lazy generation of bases
-		self.bases[name] = (generator, None, None, None)
+		self.bases[name] = (generator, None, None, base_name)
 		#                   generator array format base_name
 
 		def pixmapGenerator() :
@@ -49,47 +49,57 @@ class Main(QtWidgets.QMainWindow) :
 				# get base info
 				base_generator, base, fmt, base_base_name = self.bases[base_name]
 
-
 				if base is None : # bases needs to be generated
-					#stack = Stack()
-					#stack.push(base_name)
-					#base_generator, base, fmt, base_base_name = self.bases[base_base_name]
-					#while base is None and :
-					#	stack.push(base_base_name)
+					#stack = []
+					#stack.append(base_name)
+					#while base_base_name is not None and \
+					#      self.bases[base_base_name][1] is None :
+					#	stack.append(base_base_name)
 					#	base_generator, base, fmt, base_base_name = self.bases[base_base_name]
-					self.bases[base_name] = (base_generator, *base_generator(),
+					#while stack :
+					#	el = stack.pop()
+					#	base_generator, _, _, base_base_name = self.bases[el]
+					#	self.bases[el] = (base_generator,
+					#	*base_generator(base=),
+					#		base_base_name)
+
+					if base_base_name is not None :
+						bb_generator, bb, fmt, bbb_name = self.bases[base_base_name]
+						if bb is None :
+							self.bases[bb_name] = (bb_generator, *bb_generator(fmt=fmt), fmt, bbb_name)
+
+					base_generator, base, fmt, base_base_name = self.bases[base_name]
+					self.bases[base_name] = (base_generator, *base_generator(base=bb,
+					fmt=fmt),
 					base_base_name)
 				base_generator, base, fmt, base_base_name = self.bases[base_name]
 				arr, fmt = generator(base=base, fmt=fmt)
 
-			self.bases[name] = (generator, arr, fmt, None)
+			self.bases[name] = (generator, arr, fmt, base_name)
 
 			im = imgfy(arr, fmt) # ????
 			pixmap = QtGui.QPixmap(im)
 
 			return pixmap
 
-		self.pixmaps.append(pixmapGenerator)
+		#self.pixmaps.append(pixmapGenerator)
+		self.pixmapStr[name] = pixmapGenerator
 		self.comboBox.addItem(name)
 
 	def createPixmaps(self) :
 
-		self.pixmaps = []
+		#self.pixmaps = []
+		self.pixmapStr = dict()
 
 		from functools import partial
 		import ptexture
 		from texturers import noisefun
 		from partial_ext import partial_ext
 
-		#data = np.random.randint(256, size=(rows, cols), dtype=np.uint8)
 		self.addTexture('noise', partial_ext(noisefun, R=rows, C=cols))
 		self.addTexture('colornoise',
 		               partial_ext(noisefun, R=rows, C=cols,
 									             fmt=QtGui.QImage.Format_RGB888))
-		# noise = ptexture.ptexture(texturers.noise_uint8)
-		# wood = ptexture.ptexture(texturers.wood)
-		# self.addTexture(noise)
-		# self.addTexture(wood)
 		self.addTexture('zoomed smooth noise',
 		                partial_ext(zoomed_smooth_noise, zoom=4),
 		                base_name='noise')
@@ -127,7 +137,7 @@ class Main(QtWidgets.QMainWindow) :
 		self.addTexture('weird', partial(weird), base_name='noise',
 		imgfy=npqt.arr_to_reds)
 
-		self.updatePixmap(0)
+		self.updatePixmapStr('noise')
 
 	def createWidgets(self) :
 		self.label = QtWidgets.QLabel()
@@ -140,7 +150,7 @@ class Main(QtWidgets.QMainWindow) :
 		self.prev = QtWidgets.QPushButton('prev')
 		self.prev.clicked.connect(lambda : self.updatePixmap(self.pixmap_idx - 1))
 		self.comboBox =  QtWidgets.QComboBox(self)
-		self.comboBox.currentIndexChanged.connect(lambda i : self.updatePixmap(i))
+		self.comboBox.currentTextChanged.connect(lambda s : self.updatePixmapStr(s))
 
 	def setupLayout(self) :
 		# setup layout
@@ -162,20 +172,34 @@ class Main(QtWidgets.QMainWindow) :
 		self.layout.addWidget(changer.parent())
 		self.layout.addWidget(self.label)
 
-	def updatePixmap(self, idx) :
-		idx %= len(self.pixmaps)
+	def updatePixmapStr(self, name) :
+		#pm = self.pixmapStr[name]
 
-		if self.comboBox.currentIndex() != idx :
-			self.comboBox.setCurrentIndex(idx)
+		if self.comboBox.currentText() != name :
+			self.comboBox.setCurrentText(name)
 			return
 
-		self.pixmap_idx = idx
+		self.pixmap_name = name
 
-		# eval
-		pm = self.pixmaps[self.pixmap_idx]()
-		self.pixmaps[self.pixmap_idx] = lambda : pm
+		pm = self.pixmapStr[name]()
+		self.pixmapStr[self.pixmap_name] = lambda : pm
 
 		self.label.setPixmap(pm)
+
+	#def updatePixmap(self, idx) :
+	#	idx %= len(self.pixmaps)
+
+	#	if self.comboBox.currentIndex() != idx :
+	#		self.comboBox.setCurrentIndex(idx)
+	#		return
+
+	#	self.pixmap_idx = idx
+
+	#	# eval
+	#	pm = self.pixmaps[self.pixmap_idx]()
+	#	self.pixmaps[self.pixmap_idx] = lambda : pm
+
+	#	self.label.setPixmap(pm)
 
 def colornoise(rows, cols) :
 	return np.random.randint(256, size=(rows, cols, 3), dtype=np.uint8)
