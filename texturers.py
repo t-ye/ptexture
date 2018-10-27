@@ -1,9 +1,36 @@
-from ptexture import ptexture
+from ptexture import ptexture, texturefun
+
 
 def noise_generator(**kwargs) :
 	import numpy as np
 
-	return np.random.randint(256, size=(kwargs['R'], kwargs['C']), dtype=np.uint8)
+def partial_ext(f, *args1, **kwargs1) :
+	def	ff(*args2, **kwargs2) :
+		return partial(f, *args1, *args2, **kwargs1, **kwargs2)
+	return ff
+
+def noisefun(**kwargs) :
+
+	import numpy as np
+	from PyQt5.QtGui import QImage
+
+	R,C = kwargs['R'], kwargs['C']
+	fmt = kwargs.get('fmt')
+
+	if fmt == QImage.Format_Grayscale8 :
+		arr = np.random.randint(256, size=(kwargs['R'], kwargs['C']), dtype=np.uint8)
+	elif fmt == QImage.Format_RGB888 :
+		arr = np.random.randint(256, size=(kwargs['R'], kwargs['C'], 3), dtype=np.uint8)
+	else :
+		arr = np.random.randint(256, size=(kwargs['R'], kwargs['C']), dtype=np.uint8)
+		fmt = QImage.Format_Grayscale8
+
+	return (arr, fmt)
+
+
+
+
+
 
 def wood_generator(base, **kwargs) :
 	import numpy as np
@@ -60,6 +87,6 @@ def turbulence(base, size) :
 
 	return v / (2*isize)
 
-noise = ptexture(noise_generator)
-wood = ptexture(wood_generator, noise)
+#noise = ptexture(texturefun(noise, ))
+#wood = ptexture(wood_generator, noise)
 

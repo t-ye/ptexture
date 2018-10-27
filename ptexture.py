@@ -1,4 +1,19 @@
+class texturefun() :
 
+	"""
+	Functor for procedural textures.
+
+	"""
+
+	def __init__(self, f, name=None) :
+		self.f = f
+		self.name = self.f.__name__ if name is None else name
+
+	def __call__(self, *args, **kwargs) :
+		"""
+		Generate a texture with the given arguments.
+		"""
+		return self.f(*args, **kwargs)
 
 class ptexture() :
 
