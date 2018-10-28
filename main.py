@@ -260,20 +260,48 @@ def zoomed_smooth_noise(**kwargs) :
 
 	return (v, fmt)
 
+
+def iterate(f, x) :
+	yield x
+	while 1:
+		x = f(x)
+		yield x
+
+
+base_temp = None
+fmt_temp = None
+
+def zoomed_smooth_noise_helper(zoom) :
+	global base_temp
+	global fmt_temp
+	return zoomed_smooth_noise(base=base_temp, zoom=zoom, fmt=fmt_temp)[0]
+
+
 def turbulence(**kwargs) :
+
+	from itertools import takewhile, accumulate
+	from multiprocessing import Pool
 
 	base = kwargs['base']
 	zoom = kwargs['zoom']
 	fmt = kwargs['fmt']
 
 	v = np.zeros_like(base,dtype=np.float)
-	izoom = zoom
 
-	while zoom >= 1 :
-		v += zoomed_smooth_noise(base=base, zoom=zoom, fmt=fmt)[0] * zoom
-		zoom /= 2
+	zooms = list(takewhile(lambda x : x >= 1, iterate(lambda x : x/2, zoom)))
 
-	return (v / (2*izoom), fmt)
+	global base_temp
+	global fmt_temp
+	base_temp = base
+	fmt_temp = fmt
+	with Pool(len(zooms)) as p :
+		v = sum(p.map(zoomed_smooth_noise_helper, zooms))
+	#while zoom >= 1 :
+	#	v += zoomed_smooth_noise(base=base, zoom=zoom, fmt=fmt)[0] * zoom
+	#	zoom /= 2
+
+
+	return (v / (2*zoom), fmt)
 
 
 def arr_to_bwim(arr) :
