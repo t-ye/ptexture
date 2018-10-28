@@ -47,32 +47,13 @@ class Main(QtWidgets.QMainWindow) :
 				arr, fmt = generator()
 			else :
 				# get base info
-				base_generator, base, fmt, base_base_name = self.bases[base_name]
+				base_generator, base, fmt, bb_name = self.bases[base_name]
 
-				if base is None : # bases needs to be generated
-					#stack = []
-					#stack.append(base_name)
-					#while base_base_name is not None and \
-					#      self.bases[base_base_name][1] is None :
-					#	stack.append(base_base_name)
-					#	base_generator, base, fmt, base_base_name = self.bases[base_base_name]
-					#while stack :
-					#	el = stack.pop()
-					#	base_generator, _, _, base_base_name = self.bases[el]
-					#	self.bases[el] = (base_generator,
-					#	*base_generator(base=),
-					#		base_base_name)
+				if base is None and bb_name is not None : # bases needs to be generated
 
-					if base_base_name is not None :
-						bb_generator, bb, fmt, bbb_name = self.bases[base_base_name]
-						if bb is None :
-							self.bases[bb_name] = (bb_generator, *bb_generator(fmt=fmt), fmt, bbb_name)
+					self.updatePixmapStr(base_name, set_to=False)
 
-					base_generator, base, fmt, base_base_name = self.bases[base_name]
-					self.bases[base_name] = (base_generator, *base_generator(base=bb,
-					fmt=fmt),
-					base_base_name)
-				base_generator, base, fmt, base_base_name = self.bases[base_name]
+				_, base, fmt, _ = self.bases[base_name]
 				arr, fmt = generator(base=base, fmt=fmt)
 
 			self.bases[name] = (generator, arr, fmt, base_name)
@@ -82,13 +63,11 @@ class Main(QtWidgets.QMainWindow) :
 
 			return pixmap
 
-		#self.pixmaps.append(pixmapGenerator)
 		self.pixmapStr[name] = pixmapGenerator
 		self.comboBox.addItem(name)
 
 	def createPixmaps(self) :
 
-		#self.pixmaps = []
 		self.pixmapStr = dict()
 
 		from functools import partial
@@ -146,9 +125,17 @@ class Main(QtWidgets.QMainWindow) :
 		self.new_noise = QtWidgets.QPushButton('new noise')
 		self.new_noise.clicked.connect(lambda : self.createPixmaps())
 		self.next = QtWidgets.QPushButton('next')
-		self.next.clicked.connect(lambda : self.updatePixmap(self.pixmap_idx + 1))
+		self.next.clicked.connect(lambda :
+			self.comboBox.setCurrentIndex((self.comboBox.currentIndex() + 1) %
+		                                self.comboBox.count()
+			)
+		)
 		self.prev = QtWidgets.QPushButton('prev')
-		self.prev.clicked.connect(lambda : self.updatePixmap(self.pixmap_idx - 1))
+		self.prev.clicked.connect(lambda :
+			self.comboBox.setCurrentIndex((self.comboBox.currentIndex() - 1) %
+		                                self.comboBox.count()
+			)
+		)
 		self.comboBox =  QtWidgets.QComboBox(self)
 		self.comboBox.currentTextChanged.connect(lambda s : self.updatePixmapStr(s))
 
@@ -172,19 +159,24 @@ class Main(QtWidgets.QMainWindow) :
 		self.layout.addWidget(changer.parent())
 		self.layout.addWidget(self.label)
 
-	def updatePixmapStr(self, name) :
-		#pm = self.pixmapStr[name]
+	def updatePixmapStr(self, name, set_to=True) :
 
-		if self.comboBox.currentText() != name :
-			self.comboBox.setCurrentText(name)
-			return
+		if set_to :
 
-		self.pixmap_name = name
+			pm = self.pixmapStr[name]
+			if callable(pm) :
+				pm = pm()
+				self.pixmapStr[name] = pm
 
-		pm = self.pixmapStr[name]()
-		self.pixmapStr[self.pixmap_name] = lambda : pm
 
-		self.label.setPixmap(pm)
+			self.label.setPixmap(pm)
+			self.pixmap_name = name
+		else :
+
+			pm = self.pixmapStr[name]
+			if callable(pm) :
+				pm = pm()
+				self.pixmapStr[name] = pm
 
 	#def updatePixmap(self, idx) :
 	#	idx %= len(self.pixmaps)
@@ -201,8 +193,6 @@ class Main(QtWidgets.QMainWindow) :
 
 	#	self.label.setPixmap(pm)
 
-def colornoise(rows, cols) :
-	return np.random.randint(256, size=(rows, cols, 3), dtype=np.uint8)
 
 
 def blur(**kwargs) :
@@ -213,8 +203,8 @@ def blur(**kwargs) :
 	# get matrix in middle same as base
 	# but with a wraparound border around it
 	repborder = np.tile(np.atleast_3d(base), (3,3,1))[R-1:2*R+1,C-1:2*C+1]
-	print(base.shape)
-	print(repborder.shape)
+	#print(base.shape)
+	#print(repborder.shape)
 
 	# get the matrices that are a result of
 	# moving the central instance of base left, right down, and up cast to 16 bits
@@ -224,10 +214,10 @@ def blur(**kwargs) :
 	b = repborder[2:,1:C+1]
 	t = repborder[:R,1:C+1]
 
-	print(l.shape)
-	print(r.shape)
-	print(b.shape)
-	print(t.shape)
+	#print(l.shape)
+	#print(r.shape)
+	#print(b.shape)
+	#print(t.shape)
 
 	return ((l+r+b+t+np.atleast_3d(base))/5, fmt)
 
