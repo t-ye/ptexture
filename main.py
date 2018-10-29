@@ -283,12 +283,15 @@ def turbulence(**kwargs) :
 	global base_temp
 	global fmt_temp
 	base_temp = base
+	print(base)
 	fmt_temp = fmt
-	with Pool(len(zooms)) as p :
-		v = sum(p.map(zoomed_smooth_noise_helper, zooms))
-	#while zoom >= 1 :
-	#	v += zoomed_smooth_noise(base=base, zoom=zoom, fmt=fmt)[0] * zoom
-	#	zoom /= 2
+	#with Pool(len(zooms)) as p :
+	#	vs = p.map(zoomed_smooth_noise_helper, zooms)
+
+	#	v = sum(v*zooms[i] for (i,v) in enumerate(vs))
+	while zoom >= 1 :
+		v += zoomed_smooth_noise(base=base, zoom=zoom, fmt=fmt)[0] * zoom
+		zoom /= 2
 
 
 	return (v / (2*zoom), fmt)
