@@ -1,4 +1,4 @@
-from ptexture import ptexture, texturefun
+#from ptexture import ptexture, texturefun
 
 
 def noise_generator(**kwargs) :
@@ -26,10 +26,6 @@ def noisefun(**kwargs) :
 		fmt = QImage.Format_Grayscale8
 
 	return (arr, fmt)
-
-
-
-
 
 
 def wood_generator(base, **kwargs) :

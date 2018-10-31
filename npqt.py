@@ -24,15 +24,19 @@ def arr_to_image(arr, fmt) :
 
 def g8_to_blue(arr,fmt) :
 
+	from color import channelsplit
+
 	import numpy as np
 	import PyQt5.QtGui as QtGui
 
 	depth = 1 if len(arr.shape) == 2 else arr.shape[2]
 	if depth != 1 :
 		raise ValueError('Depth of array must be 1')
-	narr = arr
-	arr = np.full((*narr.shape, 3), 0, dtype=np.uint8)
-	arr[...,2] = narr
+	arr = channelsplit(lambda x : (
+			np.zeros(x.shape),
+			np.zeros(x.shape),
+			arr
+		), arr)
 	return arr_to_image(arr, QtGui.QImage.Format_RGB888)
 
 def g8_to_brown(arr,fmt) :

@@ -71,7 +71,7 @@ class Main(QtWidgets.QMainWindow) :
 		self.pixmapStr = dict()
 
 		from functools import partial
-		import ptexture
+		#import ptexture
 		from texturers import noisefun
 		from partial_ext import partial_ext
 
