@@ -230,6 +230,7 @@ def zoomed_smooth_noise(**kwargs) :
 
 	idxs = np.indices(base.shape[:2])
 
+
 	# get ranges corresonding to the top left (1/zoom)th
 	# portion of the matrix
 	f, i = np.modf(idxs / zoom)
@@ -276,6 +277,7 @@ def turbulence(**kwargs) :
 	zoom = kwargs['zoom']
 	fmt = kwargs['fmt']
 
+	izoom = zoom
 	v = np.zeros_like(base,dtype=np.float)
 
 	zooms = list(takewhile(lambda x : x >= 1, iterate(lambda x : x/2, zoom)))
@@ -294,7 +296,7 @@ def turbulence(**kwargs) :
 		zoom /= 2
 
 
-	return (v / (2*zoom), fmt)
+	return (v / (2*izoom), fmt)
 
 
 def arr_to_bwim(arr) :
