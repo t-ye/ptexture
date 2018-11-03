@@ -9,7 +9,7 @@ def channelsplit(splitter, arr) :
 	return np.dstack(splitter(arr))
 
 import numpy as np
-from npqt import arr_to_image
+import npqt
 import PyQt5.QtGui as QtGui
 
 def hsv2rgb(hsv) :
@@ -72,3 +72,12 @@ def hsv2rgb(hsv) :
 	rgb *= 256
 	rgb[rgb >= 256] -= 1
 	return rgb
+
+from collections import namedtuple
+
+colorformat = namedtuple('colorformat', 'format channels')
+
+gray8 = colorformat(QtGui.QImage.Format_Grayscale8, (8,))
+rgb888 = colorformat(QtGui.QImage.Format_RGB888, (8,8,8))
+rgb565 = colorformat(QtGui.QImage.Format_RGB16, (5,6,5))
+rgb555 = colorformat(QtGui.QImage.Format_RGB555, (1,5,5,5))

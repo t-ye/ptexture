@@ -2,6 +2,40 @@
 Interoperability between NumPy arrays and PyQt images.
 """
 
+import color
+
+def color_dtypes(cfmt : color.colorformat) :
+	channels = cfmt.channels
+	dtypes = []
+	for channel in channels :
+		if channel == 1 :
+			dtypes.append(np.bool)
+		if channel <= 8 :
+			dtypes.append(np.uint8)
+		if channel <= 16 :
+			dtypes.append(np.uint16)
+		else :
+			raise NotImplemented()
+	return dtypes
+
+
+
+class filter() :
+
+	def __init__(self, fmt) :
+		pass
+
+
+class colorizer() :
+
+	def __init__(self, colorfunc) :
+		super(PyQt5.QImage.Format_Grayscale8)
+		self.colorfunc = colorfunc
+
+	def __call__(self, arr) :
+
+		return np.dstack(self.colorfunc(arr))
+
 
 def arr_to_image(arr, fmt) :
 
