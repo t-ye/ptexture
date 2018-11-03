@@ -49,7 +49,7 @@ class Main(QtWidgets.QMainWindow) :
 				# get base info
 				base_generator, base, fmt, bb_name = self.bases[base_name]
 
-				if base is None and bb_name is not None : # bases needs to be generated
+				if base is None : # bases needs to be generated
 
 					self.updatePixmapStr(base_name, set_to=False)
 
@@ -276,25 +276,31 @@ def turbulence(**kwargs) :
 	zoom = kwargs['zoom']
 	fmt = kwargs['fmt']
 
-	v = np.zeros_like(base,dtype=np.float)
-
+	izoom = zoom
 	zooms = list(takewhile(lambda x : x >= 1, iterate(lambda x : x/2, zoom)))
 
 	global base_temp
 	global fmt_temp
 	base_temp = base
-	print(base)
+	#print(base)
 	fmt_temp = fmt
+	#from time import time
+	#t = time()
 	#with Pool(len(zooms)) as p :
 	#	vs = p.map(zoomed_smooth_noise_helper, zooms)
+	#v = sum(v*zooms[i] for (i,v) in enumerate(vs))
 
-	#	v = sum(v*zooms[i] for (i,v) in enumerate(vs))
+	#print('Multiprocessing time: ', round(time() - t, 2))
+
+	#t = time()
+	v = np.zeros(base.shape, dtype=np.float)
 	while zoom >= 1 :
 		v += zoomed_smooth_noise(base=base, zoom=zoom, fmt=fmt)[0] * zoom
 		zoom /= 2
+	#print('Loop time: ', round(time() - t, 2))
 
 
-	return (v / (2*zoom), fmt)
+	return (v / (2*izoom), fmt)
 
 
 def arr_to_bwim(arr) :
