@@ -178,23 +178,6 @@ class Main(QtWidgets.QMainWindow) :
 				pm = pm()
 				self.pixmapStr[name] = pm
 
-	#def updatePixmap(self, idx) :
-	#	idx %= len(self.pixmaps)
-
-	#	if self.comboBox.currentIndex() != idx :
-	#		self.comboBox.setCurrentIndex(idx)
-	#		return
-
-	#	self.pixmap_idx = idx
-
-	#	# eval
-	#	pm = self.pixmaps[self.pixmap_idx]()
-	#	self.pixmaps[self.pixmap_idx] = lambda : pm
-
-	#	self.label.setPixmap(pm)
-
-
-
 def blur(**kwargs) :
 
 	base = kwargs['base']
@@ -228,26 +211,28 @@ def zoomed_smooth_noise(**kwargs) :
 	fmt = kwargs['fmt']
 	# m assumed 2D
 
-	idxs = np.indices(base.shape[:2])
+	from time import time
+
+	t = time()
 
 
 	# get ranges corresonding to the top left (1/zoom)th
 	# portion of the matrix
-	f, i = np.modf(idxs / zoom)
+	(xf, yf), i = np.modf(np.indices(base.shape[:2]) / zoom)
 	x, y = i.astype(np.int)
-	xf, yf = f
-
+	print(time() - t)
 
 	# up, left (negative indices allowed!)
 	u = (x-1)
 	l = (y-1)
 
-	depth = 1 if len(base.shape) == 2 else base.shape[2]
+	depth = 1 if base.ndim == 2 else base.shape[2]
 
-	v  = (   xf  *    yf ).repeat(depth).reshape(base.shape) * base[x,y]
-	v += ((1-xf) *    yf ).repeat(depth).reshape(base.shape) * base[u,y]
-	v += (   xf  * (1-yf)).repeat(depth).reshape(base.shape) * base[x,l]
-	v += ((1-xf) * (1-yf)).repeat(depth).reshape(base.shape) * base[u,l]
+	t = time()
+	v  = (   xf  *    yf ).repeat(depth).reshape(base.shape) * base[x,y] \
+	   + ((1-xf) *    yf ).repeat(depth).reshape(base.shape) * base[u,y] \
+	   + (   xf  * (1-yf)).repeat(depth).reshape(base.shape) * base[x,l] \
+	   + ((1-xf) * (1-yf)).repeat(depth).reshape(base.shape) * base[u,l]
 
 	return (v, fmt)
 
@@ -285,7 +270,6 @@ def turbulence(**kwargs) :
 	global base_temp
 	global fmt_temp
 	base_temp = base
-	print(base)
 	fmt_temp = fmt
 	#with Pool(len(zooms)) as p :
 	#	vs = p.map(zoomed_smooth_noise_helper, zooms)
