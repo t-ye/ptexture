@@ -230,6 +230,7 @@ def zoomed_smooth_noise(**kwargs) :
 
 	idxs = np.indices(base.shape[:2])
 
+
 	# get ranges corresonding to the top left (1/zoom)th
 	# portion of the matrix
 	f, i = np.modf(idxs / zoom)
