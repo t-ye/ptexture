@@ -2,6 +2,7 @@ import PyQt5.QtWidgets as QtWidgets
 import PyQt5.QtGui as QtGui
 import numpy as np
 import npqt
+import color
 from color import channelsplit, hsv2rgb
 from typing import Callable
 
@@ -74,11 +75,12 @@ class Main(QtWidgets.QMainWindow) :
 		#import ptexture
 		from texturers import noisefun
 		from partial_ext import partial_ext
+		import color
 
 		self.addTexture('noise', partial_ext(noisefun, R=rows, C=cols))
 		self.addTexture('colornoise',
 		               partial_ext(noisefun, R=rows, C=cols,
-									             fmt=QtGui.QImage.Format_RGB888))
+									             fmt=color.rgb888))
 		self.addTexture('zoomed smooth noise',
 		                partial_ext(zoomed_smooth_noise, zoom=4),
 		                base_name='noise')
@@ -162,7 +164,6 @@ class Main(QtWidgets.QMainWindow) :
 	def updatePixmapStr(self, name, set_to=True) :
 
 		if set_to :
-
 			pm = self.pixmapStr[name]
 			if callable(pm) :
 				pm = pm()
@@ -289,10 +290,6 @@ def turbulence(**kwargs) :
 	return (v / (2*izoom), fmt)
 
 
-def arr_to_bwim(arr) :
-	return QtGui.QImage(arr[...,np.newaxis], arr.shape[1], arr.shape[0], arr.shape[1],
-	QtGui.QImage.Format_Grayscale8)
-
 def arr_to_blues(arr) :
 	narr = arr
 	# go from grayscale to RGB
@@ -300,7 +297,7 @@ def arr_to_blues(arr) :
 	arr  = np.full((*arr.shape, 3), 0, dtype=np.uint8)
 	# set blue (invert)
 	arr[...,2] = narr
-	return npqt.arr_to_image(arr, QtGui.QImage.Format_RGB888)
+	return npqt.arr_to_image(arr, color.rgb888)
 
 
 def marble_base(**kwargs) :
@@ -309,7 +306,7 @@ def marble_base(**kwargs) :
 
 	arr = np.indices((R,C))
 	xy = arr[0] + arr[1]
-	return (128*(np.sin(xy / np.sqrt(max(R,C)))+1), QtGui.QImage.Format_Grayscale8)
+	return (128*(np.sin(xy / np.sqrt(max(R,C)))+1), color.gray8)
 
 def marble_true(**kwargs) :
 
@@ -343,7 +340,7 @@ def wood_base(**kwargs) :
 	arr[1] -= C / 2
 
 	return (128 * (np.sin(np.sqrt(arr[0] ** 2 + arr[1] ** 2) / np.sqrt(R+C))+1),
-          QtGui.QImage.Format_Grayscale8)
+          color.gray8)
 
 def wood(**kwargs) :
 
@@ -370,7 +367,7 @@ def weird_base(**kwargs) :
 
 	f = 64*(np.sin(arr[0] / np.pi**2)+1 + np.sin(arr[1] / np.pi**2)+1)
 
-	return (f, QtGui.QImage.Format_Grayscale8)
+	return (f, color.gray8)
 
 def weird(**kwargs) :
 

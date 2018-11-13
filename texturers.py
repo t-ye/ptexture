@@ -13,17 +13,21 @@ def noisefun(**kwargs) :
 
 	import numpy as np
 	from PyQt5.QtGui import QImage
+	import color
 
 	R,C = kwargs['R'], kwargs['C']
 	fmt = kwargs.get('fmt')
 
-	if fmt == QImage.Format_Grayscale8 :
+
+	arr = np.random.randint
+
+	if fmt == color.gray8 :
 		arr = np.random.randint(256, size=(kwargs['R'], kwargs['C']), dtype=np.uint8)
-	elif fmt == QImage.Format_RGB888 :
+	elif fmt == color.rgb888 :
 		arr = np.random.randint(256, size=(kwargs['R'], kwargs['C'], 3), dtype=np.uint8)
 	else :
 		arr = np.random.randint(256, size=(kwargs['R'], kwargs['C']), dtype=np.uint8)
-		fmt = QImage.Format_Grayscale8
+		fmt = color.gray8
 
 	return (arr, fmt)
 

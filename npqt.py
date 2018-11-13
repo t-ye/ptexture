@@ -4,7 +4,7 @@ Interoperability between NumPy arrays and PyQt images.
 
 import color
 
-def color_dtypes(cfmt : color.colorformat) :
+def color_dtypes(cfmt : 'color.colorformat') :
 	channels = cfmt.channels
 	dtypes = []
 	for channel in channels :
@@ -29,7 +29,7 @@ class filter() :
 class colorizer() :
 
 	def __init__(self, colorfunc) :
-		super(PyQt5.QImage.Format_Grayscale8)
+		super(color.gray8)
 		self.colorfunc = colorfunc
 
 	def __call__(self, arr) :
@@ -49,16 +49,14 @@ def arr_to_image(arr, fmt) :
 	imgen = partial(QtGui.QImage, arr, arr.shape[1], arr.shape[0])
 
 
-	bitsPerPixel = 1
+	bytesPerPixel = (sum(fmt.channels)+7) // 8
 
-	if fmt == QtGui.QImage.Format_RGB888 :
-		bitsPerPixel = 3
-
-	return imgen(arr.shape[1] * bitsPerPixel, fmt)
+	return imgen(arr.shape[1] * bytesPerPixel, fmt.format)
 
 def g8_to_blue(arr,fmt) :
 
 	from color import channelsplit
+	import color
 
 	import numpy as np
 	import PyQt5.QtGui as QtGui
@@ -71,7 +69,7 @@ def g8_to_blue(arr,fmt) :
 			np.zeros(x.shape),
 			arr
 		), arr)
-	return arr_to_image(arr, QtGui.QImage.Format_RGB888)
+	return arr_to_image(arr, color.gray8)
 
 def g8_to_brown(arr,fmt) :
 
@@ -88,7 +86,7 @@ def g8_to_brown(arr,fmt) :
 			np.clip(x+30, 0, 255),
 			np.full(x.shape, 30)
 		), arr)
-	return arr_to_image(arr, QtGui.QImage.Format_RGB888)
+	return arr_to_image(arr, color.rgb888)
 
 def arr_to_reds(arr,fmt) :
 
@@ -104,4 +102,4 @@ def arr_to_reds(arr,fmt) :
 			np.full(x.shape, 1.0)
 		), arr)
 	arr = hsv2rgb(arr)
-	return arr_to_image(arr, QtGui.QImage.Format_RGB888)
+	return arr_to_image(arr, color.rgb888)

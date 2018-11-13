@@ -75,9 +75,16 @@ def hsv2rgb(hsv) :
 
 from collections import namedtuple
 
+"""
+A colorformat instance is a lightweight wrapper over a PyQt QImage
+format enum member. Such enum members are no more than numeric
+constants. This encourages us to provide this colorformat class, which
+induces structure on those numeric constants.
+"""
 colorformat = namedtuple('colorformat', 'format channels')
 
 gray8 = colorformat(QtGui.QImage.Format_Grayscale8, (8,))
 rgb888 = colorformat(QtGui.QImage.Format_RGB888, (8,8,8))
 rgb565 = colorformat(QtGui.QImage.Format_RGB16, (5,6,5))
 rgb555 = colorformat(QtGui.QImage.Format_RGB555, (1,5,5,5))
+
