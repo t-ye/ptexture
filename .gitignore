@@ -1,2 +1,10 @@
 __pycache__
 blur.py
+build/
+calls
+dep/
+dist/
+im.png
+main.spec
+time
+
