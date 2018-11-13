@@ -67,6 +67,9 @@ class Main(QtWidgets.QMainWindow) :
 		self.pixmapStr[name] = pixmapGenerator
 		self.comboBox.addItem(name)
 
+
+	default_kwargs = {'R':rows, 'C':cols, 'zoom':4}
+
 	def createPixmaps(self) :
 
 		self.pixmapStr = dict()
@@ -74,15 +77,16 @@ class Main(QtWidgets.QMainWindow) :
 		from functools import partial
 		#import ptexture
 		from texturers import noisefun
+		import texturers
 		from partial_ext import partial_ext
 		import color
 
-		self.addTexture('noise', partial_ext(noisefun, R=rows, C=cols))
+		self.addTexture('noise', partial_ext(texturers.noise, R=rows, C=cols))
 		self.addTexture('colornoise',
 		               partial_ext(noisefun, R=rows, C=cols,
 									             fmt=color.rgb888))
 		self.addTexture('zoomed smooth noise',
-		                partial_ext(zoomed_smooth_noise, zoom=4),
+		                partial_ext(zoomed_smooth_noise, R=rows, C=cols, zoom=4),
 		                base_name='noise')
 		self.addTexture('zoomed smooth colornoise',
 		                partial_ext(zoomed_smooth_noise, zoom=4),
