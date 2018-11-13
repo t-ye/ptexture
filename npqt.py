@@ -51,7 +51,7 @@ def arr_to_image(arr, fmt) :
 
 	bytesPerPixel = (sum(fmt.channels)+7) // 8
 
-	return imgen(arr.shape[1] * bytesPerPixel, fmt.format)
+	return imgen(arr.shape[1] * bytesPerPixel, fmt.wrapped)
 
 def g8_to_blue(arr,fmt) :
 

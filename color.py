@@ -81,7 +81,7 @@ format enum member. Such enum members are no more than numeric
 constants. This encourages us to provide this colorformat class, which
 induces structure on those numeric constants.
 """
-colorformat = namedtuple('colorformat', 'format channels')
+colorformat = namedtuple('colorformat', 'wrapped channels')
 
 gray8 = colorformat(QtGui.QImage.Format_Grayscale8, (8,))
 rgb888 = colorformat(QtGui.QImage.Format_RGB888, (8,8,8))
