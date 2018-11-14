@@ -20,8 +20,10 @@ class Main(QtWidgets.QMainWindow) :
 
 		super().__init__()
 
+		#self.curr_idx = None
 
 		self.bases = dict()
+		self.ptextures = list()
 
 		self.createWidgets()
 		self.createPixmaps()
@@ -30,7 +32,7 @@ class Main(QtWidgets.QMainWindow) :
 		self.show()
 
 
-		self.comboBox.setCurrentIndex(2)
+		#self.comboBox.setCurrentIndex(2)
 
 	def addpTexture(self, ptexture : texturers.ptexture) :
 
@@ -39,7 +41,8 @@ class Main(QtWidgets.QMainWindow) :
 			self.ptextures.add(base)
 			base = base.base
 
-		self.ptextures.add(ptexture)
+		self.ptextures.append(ptexture)
+		self.comboBox.addItem(str(self.comboBox.count()))
 
 	def addTexture(self, name : str,
 	                    generator : Callable[...,(np.ndarray,color.colorformat)],
@@ -81,10 +84,15 @@ class Main(QtWidgets.QMainWindow) :
 		self.pixmapStr[name] = pixmapGenerator
 		self.comboBox.addItem(name)
 
-	def updateTexture() :
-		pass
+	def updateTexture(self, idx) :
+		if self.comboBox.currentIndex() != idx :
+			self.comboBox.setCurrentIndex(idx)
+			return
 
-
+		texture = self.ptextures[idx]
+		im = npqt.arr_to_image(*texture(**default_kwargs))
+		pm = QtGui.QPixmap(im)
+		self.label.setPixmap(pm)
 
 	def createPixmaps(self) :
 
@@ -97,46 +105,50 @@ class Main(QtWidgets.QMainWindow) :
 		from partial_ext import partial_ext
 		import color
 
-		self.addTexture('noise', texturers.noise)
-		self.addTexture('colornoise',
-		               partial_ext(noisefun, R=rows, C=cols,
-									             fmt=color.rgb888))
-		self.addTexture('zoomed smooth noise', texturers.zsn, base_name='noise')
-		self.addTexture('zoomed smooth colornoise',
-		                partial_ext(texturers.zoomed_smooth_noise, zoom=4),
-		                base_name='colornoise')
-		self.addTexture('blur', blur, base_name='noise')
-		self.addTexture('colorblur', blur, base_name='colornoise')
-		self.addTexture('turbulence',
-		               partial_ext(turbulence, zoom=64),
-									 base_name='noise')
-		self.addTexture('blueturbulence',
-		                lambda **kwargs : (kwargs['base'], kwargs['fmt']),
-									  base_name='turbulence',
-									  imgfy=npqt.g8_to_blue)
-		self.addTexture('colorturbulence',
-		                partial_ext(turbulence, zoom=64),
-									  base_name='colornoise')
-		self.addTexture('marblebase',
-		                partial_ext(marble_base, R=rows, C=cols))
-		self.addTexture('marble',
-		                marble_true,
-										base_name = 'noise')
-		self.addTexture('colormarble',
-		                marble_true,
-										base_name = 'colornoise')
-		self.addTexture('wood base', partial_ext(wood_base, R=rows, C=cols))
-		self.addTexture('wood', wood, base_name='noise')
-		self.addTexture('brownwood',
-		                lambda **kwargs : (kwargs['base'], kwargs['fmt']),
-		                imgfy=npqt.g8_to_brown,
-										base_name='wood')
-		self.addTexture('weird base', partial(weird_base, R=rows, C=cols),
-		imgfy=npqt.arr_to_reds)
-		self.addTexture('weird', partial(weird), base_name='noise',
-		imgfy=npqt.arr_to_reds)
+		self.addpTexture(texturers.noise)
+		self.addpTexture(texturers.colornoise)
 
-		self.updatePixmapStr('noise')
+		self.updateTexture(0)
+		#self.addTexture('noise', texturers.noise)
+		#self.addTexture('colornoise',
+		#               partial_ext(noisefun, R=rows, C=cols,
+		#							             fmt=color.rgb888))
+		#self.addTexture('zoomed smooth noise', texturers.zsn, base_name='noise')
+		#self.addTexture('zoomed smooth colornoise',
+		#                partial_ext(texturers.zoomed_smooth_noise, zoom=4),
+		#                base_name='colornoise')
+		#self.addTexture('blur', blur, base_name='noise')
+		#self.addTexture('colorblur', blur, base_name='colornoise')
+		#self.addTexture('turbulence',
+		#               partial_ext(turbulence, zoom=64),
+		#							 base_name='noise')
+		#self.addTexture('blueturbulence',
+		#                lambda **kwargs : (kwargs['base'], kwargs['fmt']),
+		#							  base_name='turbulence',
+		#							  imgfy=npqt.g8_to_blue)
+		#self.addTexture('colorturbulence',
+		#                partial_ext(turbulence, zoom=64),
+		#							  base_name='colornoise')
+		#self.addTexture('marblebase',
+		#                partial_ext(marble_base, R=rows, C=cols))
+		#self.addTexture('marble',
+		#                marble_true,
+		#								base_name = 'noise')
+		#self.addTexture('colormarble',
+		#                marble_true,
+		#								base_name = 'colornoise')
+		#self.addTexture('wood base', partial_ext(wood_base, R=rows, C=cols))
+		#self.addTexture('wood', wood, base_name='noise')
+		#self.addTexture('brownwood',
+		#                lambda **kwargs : (kwargs['base'], kwargs['fmt']),
+		#                imgfy=npqt.g8_to_brown,
+		#								base_name='wood')
+		#self.addTexture('weird base', partial(weird_base, R=rows, C=cols),
+		#imgfy=npqt.arr_to_reds)
+		#self.addTexture('weird', partial(weird), base_name='noise',
+		#imgfy=npqt.arr_to_reds)
+
+		#self.updatePixmapStr('noise')
 
 	def createWidgets(self) :
 		self.label = QtWidgets.QLabel()
@@ -157,7 +169,8 @@ class Main(QtWidgets.QMainWindow) :
 			)
 		)
 		self.comboBox =  QtWidgets.QComboBox(self)
-		self.comboBox.currentTextChanged.connect(lambda s : self.updatePixmapStr(s))
+		#self.comboBox.currentTextChanged.connect(lambda s : self.updatePixmapStr(s))
+		self.comboBox.currentIndexChanged.connect(lambda idx : self.updateTexture(idx))
 
 	def setupLayout(self) :
 		# setup layout

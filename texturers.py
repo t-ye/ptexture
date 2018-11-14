@@ -67,6 +67,7 @@ def noisefun(**kwargs) :
 	return (arr, fmt)
 
 noise = ptexture(noisefun, {'R', 'C'}, {'fmt' : color.gray8})
+colornoise = ptexture(noisefun, {'R', 'C'}, {'fmt' : color.rgb888})
 
 
 def wood_generator(base, **kwargs) :
