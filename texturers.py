@@ -31,6 +31,14 @@ class ptexture() :
 			self.reqd_kwargs.update(self.base.reqd_kwargs)
 			self.default_kwargs = dict(base.default_kwargs, **self.default_kwargs)
 
+	def partial_apply(self, **kwargs) :
+		import copy
+		texture = copy.deepcopy(self)
+		texture.reqd_kwargs -= kwargs.keys()
+		texture.default_kwargs.update(kwargs)
+		return texture
+
+
 	def __call__(self, **kwargs) :
 		if self.base is not None :
 			base_arr, base_fmt = self.base(**kwargs)
