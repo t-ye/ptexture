@@ -27,11 +27,16 @@ class ptexture() :
 		self.default_kwargs = default_kwargs
 		self.base = base
 
+		if self.base is not None :
+			self.reqd_kwargs.update(self.base.reqd_kwargs)
+			self.default_kwargs = dict(base.default_kwargs, **self.default_kwargs)
+
 	def __call__(self, **kwargs) :
 		if self.base is not None :
 			base_arr, base_fmt = self.base(**kwargs)
 			if 'fmt' not in kwargs :
 				kwargs['fmt'] = fmt
+			kwargs['base'] = base_arr
 
 		if not self.reqd_kwargs.issubset(kwargs) :
 			raise ValueError('Not enough kwargs: ' + \
@@ -40,10 +45,7 @@ class ptexture() :
 		# defaults updated with override
 		kwargs = dict(self.default_kwargs, **kwargs)
 
-		if self.base is not None :
-			return self.texturefun(base_arr, **kwargs)
-		else :
-			return self.texturefun(**kwargs)
+		return self.texturefun(**kwargs)
 
 
 
@@ -82,33 +84,69 @@ def wood_generator(base, **kwargs) :
 
 wood = ptexture(wood_generator, {'period', 'power', 'size'}, base=noise)
 
-def zoomed_smooth_noise(base, zoom) :
+def zoomed_smooth_noise(**kwargs) :
 
 	import numpy as np
 
-	# base assumed 2D
-	R,C = base.shape
+	zoom = kwargs['zoom']
+	base = kwargs['base']
+	zoom = kwargs['zoom']
+	fmt = kwargs['fmt']
+	# m assumed 2D
 
-	#idxs = np.arange(R, dtype=np.float).repeat(C).reshape(R,C)
-	idxs = np.indices(base.shape)
+	from time import time
+
+	t = time()
 
 	# get ranges corresonding to the top left (1/zoom)th
 	# portion of the matrix
-	f, i = np.modf(idxs / zoom)
+	(xf, yf), i = np.modf(np.indices(base.shape[:2]) / zoom)
 	x, y = i.astype(np.int)
-	xf, yf = f
-
 
 	# up, left (negative indices allowed!)
 	u = (x-1)
 	l = (y-1)
 
-	v  =    xf  *    yf  * base[x,y]
-	v += (1-xf) *    yf  * base[u,y]
-	v +=    xf  * (1-yf) * base[x,l]
-	v += (1-xf) * (1-yf) * base[u,l]
+	depth = 1 if base.ndim == 2 else base.shape[2]
 
-	return v
+	t = time()
+	v  = (   xf  *    yf ).repeat(depth).reshape(base.shape) * base[x,y] \
+	   + ((1-xf) *    yf ).repeat(depth).reshape(base.shape) * base[u,y] \
+	   + (   xf  * (1-yf)).repeat(depth).reshape(base.shape) * base[x,l] \
+	   + ((1-xf) * (1-yf)).repeat(depth).reshape(base.shape) * base[u,l]
+
+	return (v, fmt)
+
+#def zoomed_smooth_noise(**kwargs) :
+#
+#	import numpy as np
+#
+#	base = kwargs['base']
+#	R,C = kwargs['R'], kwargs['C']
+#	zoom = kwargs['zoom']
+#
+#	# base assumed 2D
+#
+#	#idxs = np.arange(R, dtype=np.float).repeat(C).reshape(R,C)
+#	idxs = np.indices(base.shape[:2]) # (2, R, C, 1)
+#
+#	# get ranges corresonding to the top left (1/zoom)th
+#	# portion of the matrix
+#	f, i = np.modf(idxs / zoom) # each (2, R, C, 1)
+#	x, y = i.astype(np.int)
+#	xf, yf = f
+#
+#
+#	# up, left (negative indices allowed!)
+#	u = (x-1)
+#	l = (y-1)
+#
+#	v  =    xf  *    yf  * base[x,y]
+#	v += (1-xf) *    yf  * base[u,y]
+#	v +=    xf  * (1-yf) * base[x,l]
+#	v += (1-xf) * (1-yf) * base[u,l]
+#
+#	return v
 
 zsn = ptexture(zoomed_smooth_noise, set(), {'zoom':8}, base=noise)
 

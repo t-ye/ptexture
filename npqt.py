@@ -36,7 +36,6 @@ class colorizer() :
 
 		return np.dstack(self.colorfunc(arr))
 
-
 def arr_to_image(arr, fmt) :
 
 	from functools import partial
@@ -47,7 +46,6 @@ def arr_to_image(arr, fmt) :
 		arr = arr.astype(np.uint8)
 
 	imgen = partial(QtGui.QImage, arr, arr.shape[1], arr.shape[0])
-
 
 	bytesPerPixel = (sum(fmt.channels)+7) // 8
 
@@ -69,7 +67,7 @@ def g8_to_blue(arr,fmt) :
 			np.zeros(x.shape),
 			arr
 		), arr)
-	return arr_to_image(arr, color.gray8)
+	return arr_to_image(arr, color.rgb888)
 
 def g8_to_brown(arr,fmt) :
 

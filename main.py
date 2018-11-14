@@ -1,3 +1,4 @@
+from __future__ import annotations
 import PyQt5.QtWidgets as QtWidgets
 import PyQt5.QtGui as QtGui
 import numpy as np
@@ -10,6 +11,7 @@ from typing import Callable
 rows = 1080
 cols = 1920
 
+default_kwargs = {'R':rows, 'C':cols, 'zoom':4}
 class Main(QtWidgets.QMainWindow) :
 
 	sentinel = object()
@@ -27,8 +29,20 @@ class Main(QtWidgets.QMainWindow) :
 
 		self.show()
 
+
+		self.comboBox.setCurrentIndex(2)
+
+	def addpTexture(self, ptexture : texturers.ptexture) :
+
+		base = ptexture.base
+		while base is not None :
+			self.ptextures.add(base)
+			base = base.base
+
+		self.ptextures.add(ptexture)
+
 	def addTexture(self, name : str,
-	                    generator : Callable[...,np.ndarray],
+	                    generator : Callable[...,(np.ndarray,color.colorformat)],
 											base_name : str = None,
 											imgfy : Callable[[np.ndarray], QtGui.QImage] = None) :
 
@@ -45,7 +59,7 @@ class Main(QtWidgets.QMainWindow) :
 				imgfy = npqt.arr_to_image
 
 			if base_name is None : # no base
-				arr, fmt = generator()
+				arr, fmt = generator(**default_kwargs)
 			else :
 				# get base info
 				base_generator, base, fmt, bb_name = self.bases[base_name]
@@ -55,7 +69,7 @@ class Main(QtWidgets.QMainWindow) :
 					self.updatePixmapStr(base_name, set_to=False)
 
 				_, base, fmt, _ = self.bases[base_name]
-				arr, fmt = generator(base=base, fmt=fmt)
+				arr, fmt = generator(base=base, fmt=fmt, **default_kwargs)
 
 			self.bases[name] = (generator, arr, fmt, base_name)
 
@@ -67,8 +81,10 @@ class Main(QtWidgets.QMainWindow) :
 		self.pixmapStr[name] = pixmapGenerator
 		self.comboBox.addItem(name)
 
+	def updateTexture() :
+		pass
 
-	default_kwargs = {'R':rows, 'C':cols, 'zoom':4}
+
 
 	def createPixmaps(self) :
 
@@ -81,15 +97,13 @@ class Main(QtWidgets.QMainWindow) :
 		from partial_ext import partial_ext
 		import color
 
-		self.addTexture('noise', partial_ext(texturers.noise, R=rows, C=cols))
+		self.addTexture('noise', texturers.noise)
 		self.addTexture('colornoise',
 		               partial_ext(noisefun, R=rows, C=cols,
 									             fmt=color.rgb888))
-		self.addTexture('zoomed smooth noise',
-		                partial_ext(zoomed_smooth_noise, R=rows, C=cols, zoom=4),
-		                base_name='noise')
+		self.addTexture('zoomed smooth noise', texturers.zsn, base_name='noise')
 		self.addTexture('zoomed smooth colornoise',
-		                partial_ext(zoomed_smooth_noise, zoom=4),
+		                partial_ext(texturers.zoomed_smooth_noise, zoom=4),
 		                base_name='colornoise')
 		self.addTexture('blur', blur, base_name='noise')
 		self.addTexture('colorblur', blur, base_name='colornoise')
