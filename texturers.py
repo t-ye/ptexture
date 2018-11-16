@@ -31,7 +31,7 @@ class ptexture() :
 			self.reqd_kwargs.update(self.base.reqd_kwargs)
 			self.default_kwargs = dict(base.default_kwargs, **self.default_kwargs)
 
-	def partial_apply(self, **kwargs) :
+	def partial(self, **kwargs) :
 		import copy
 		texture = copy.deepcopy(self)
 		texture.reqd_kwargs -= kwargs.keys()
