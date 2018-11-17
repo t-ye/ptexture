@@ -22,8 +22,9 @@ class Main(QtWidgets.QMainWindow) :
 
 		#self.curr_idx = None
 
-		self.bases = dict()
+		#self.bases = dict()
 		self.ptextures = list()
+		self.ptextures_args = dict()
 
 		self.createWidgets()
 		self.createPixmaps()
@@ -33,13 +34,16 @@ class Main(QtWidgets.QMainWindow) :
 
 	def addpTexture(self, ptexture : texturers.ptexture) :
 
-		base = ptexture.base
-		while base is not None :
-			self.ptextures.add(base)
-			base = base.base
+		#base = ptexture.base
+		#while base is not None :
+		#	self.ptextures.add(base)
+		#	base = base.base
 
+		self.ptextures_dict[len(self.ptextures)] = ptexture
 		self.ptextures.append(ptexture)
 		self.comboBox.addItem(str(self.comboBox.count()))
+
+
 
 
 	def updateTexture(self, idx) :
@@ -112,6 +116,8 @@ class Main(QtWidgets.QMainWindow) :
 		self.label = QtWidgets.QLabel()
 		self.label.setScaledContents(True) # auto resize
 
+		self.paramComboBox = QtWidgets.QComboBox(self)
+
 		self.new_noise = QtWidgets.QPushButton('new noise')
 		self.new_noise.clicked.connect(lambda : self.createPixmaps())
 		self.next = QtWidgets.QPushButton('next')
@@ -142,7 +148,7 @@ class Main(QtWidgets.QMainWindow) :
 
 		# add to layout
 
-		self.layout.addWidget(self.new_noise)
+		vlayout.addWidget(self.new_noise)
 
 		widget2 = QtWidgets.QWidget()
 		changer = QtWidgets.QHBoxLayout(widget2)
@@ -150,8 +156,10 @@ class Main(QtWidgets.QMainWindow) :
 		changer.addWidget(self.comboBox)
 		changer.addWidget(self.next)
 
-		self.layout.addWidget(changer.parent())
-		self.layout.addWidget(self.label)
+		vlayout.addWidget(changer.parent())
+		vlayout.addWidget(self.label)
+
+		hlayout.addWidget(widget3)
 
 	def updatePixmapStr(self, name, set_to=True) :
 

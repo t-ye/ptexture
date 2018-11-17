@@ -19,9 +19,7 @@ class ptexture() :
 										 reqd_kwargs :
 										 	set = set(),
 										 default_kwargs :
-										 	dict = dict(),
-										 base :
-											ptexture = None) :
+										 	dict = dict()) :
 		self.texturefun = texturefun
 		self.reqd_kwargs = reqd_kwargs
 		self.default_kwargs = default_kwargs
@@ -38,13 +36,12 @@ class ptexture() :
 		texture.default_kwargs.update(kwargs)
 		return texture
 
-
 	def __call__(self, **kwargs) :
-		if self.base is not None :
-			base_arr, base_fmt = self.base(**kwargs)
-			if 'fmt' not in kwargs :
-				kwargs['fmt'] = fmt
-			kwargs['base'] = base_arr
+		#if self.base is not None :
+		#	base_arr, base_fmt = self.base(**kwargs)
+		#	if 'fmt' not in kwargs :
+		#		kwargs['fmt'] = fmt
+		#	kwargs['base'] = base_arr
 
 		if not self.reqd_kwargs.issubset(kwargs) :
 			raise ValueError('Not enough kwargs: ' + \
