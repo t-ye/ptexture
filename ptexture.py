@@ -11,9 +11,16 @@ def partial_ext(f, *args1, **kwargs1) :
 
 import typing
 import color
+import dataclasses
 
 
 ptextures = dict()
+
+@dataclasses.dataclass(frozen=True)
+class ptexture_param() :
+	name : str
+	Type : type
+	default : Type
 
 class ptexture() :
 
@@ -69,8 +76,8 @@ def noisefun(**kwargs) :
 
 	return (arr, fmt)
 
-noise = ptexture('noise', noisefun, [('R', int), ('C', int), ('fmt',
-color.colorformat)])
+noise = ptexture('noise', noisefun,
+	[('R', int), ('C', int), ('fmt', color.colorformat)])
 #colornoise = ptexture('colornoise', noisefun, {'R', 'C'}, {'fmt' : color.rgb888})
 
 
