@@ -19,6 +19,8 @@ class Main(QtWidgets.QMainWindow) :
 	def __init__(self) :
 
 		super().__init__()
+		self.ptextures_dict = None
+		self.curr_idx = None
 
 		#self.curr_idx = None
 
@@ -27,8 +29,8 @@ class Main(QtWidgets.QMainWindow) :
 		self.ptextures_args = dict()
 
 		self.createWidgets()
-		self.createPixmaps()
 		self.setupLayout()
+		self.createPixmaps()
 
 		self.show()
 
@@ -39,20 +41,54 @@ class Main(QtWidgets.QMainWindow) :
 		#	self.ptextures.add(base)
 		#	base = base.base
 
-		self.ptextures_dict[len(self.ptextures)] = ptexture
 		self.ptextures.append(ptexture)
 		self.comboBox.addItem(str(self.comboBox.count()))
 
-
-
-
 	def updateTexture(self, idx) :
+
+		if self.curr_idx == idx :
+			return
 		if self.comboBox.currentIndex() != idx :
 			self.comboBox.setCurrentIndex(idx)
 			return
+		self.curr_idx = idx
 
 		texture = self.ptextures[idx]
-		im = npqt.arr_to_image(*texture(R=rows,C=cols))
+
+		self.ptextures_dict = {key:None for key in texture.kwargs}
+		self.ptextures_dict_types = {key:t for key,t in zip(texture.kwargs,
+		texture.type_hints)}
+
+
+		# clear vlayout
+		for i in reversed(range(self.vlayout.count())):
+			widget = self.vlayout.itemAt(i).widget()
+			self.vlayout.removeWidget(widget)
+			widget.setParent(None)
+			widget.deleteLater()
+
+		def buttonAction(kwarg) :
+			def inner() :
+				new, ok = \
+				QtWidgets.QInputDialog.getText(self, '', 'Enter value of ' + kwarg,
+				QtWidgets.QLineEdit.Normal, '')
+				if ok :
+					self.ptextures_dict[kwarg] = new
+			return inner
+
+		for kwarg in texture.kwargs :
+			buttonAction(kwarg)()
+			button = QtWidgets.QPushButton(kwarg)
+			button.clicked.connect(buttonAction(kwarg))
+			self.vlayout.addWidget(button)
+
+
+		dct = {k:self.ptextures_dict_types[k](v) for k,v in self.ptextures_dict.items()}
+
+		im = npqt.arr_to_image(*texture(**dct))
+
+
+
 		pm = QtGui.QPixmap(im)
 		self.label.setPixmap(pm)
 
@@ -68,7 +104,7 @@ class Main(QtWidgets.QMainWindow) :
 		import color
 
 		self.addpTexture(ptexture.noise)
-		self.addpTexture(ptexture.colornoise)
+		#self.addpTexture(ptexture.colornoise)
 
 		self.updateTexture(0)
 		#self.addTexture('noise', ptexture.noise)
@@ -113,10 +149,11 @@ class Main(QtWidgets.QMainWindow) :
 		#self.updatePixmapStr('noise')
 
 	def createWidgets(self) :
+		self.vlayout = None
 		self.label = QtWidgets.QLabel()
 		self.label.setScaledContents(True) # auto resize
 
-		self.paramComboBox = QtWidgets.QComboBox(self)
+		#self.paramComboBox = QtWidgets.QComboBox(self)
 
 		self.new_noise = QtWidgets.QPushButton('new noise')
 		self.new_noise.clicked.connect(lambda : self.createPixmaps())
@@ -137,16 +174,16 @@ class Main(QtWidgets.QMainWindow) :
 		self.comboBox.currentIndexChanged.connect(lambda idx : self.updateTexture(idx))
 
 	def setupLayout(self) :
-		# setup layout
+		# setup mainLayout
 		widget = QtWidgets.QWidget()
 		widget3 = QtWidgets.QWidget()
 		hlayout = QtWidgets.QHBoxLayout(widget)
 		vlayout = QtWidgets.QVBoxLayout(widget3)
-		self.layout = hlayout
-		self.setLayout(self.layout)
+		self.mainLayout = hlayout
+		self.setLayout(self.mainLayout)
 		self.setCentralWidget(widget)
 
-		# add to layout
+		# add to mainLayout
 
 		vlayout.addWidget(self.new_noise)
 
@@ -160,6 +197,10 @@ class Main(QtWidgets.QMainWindow) :
 		vlayout.addWidget(self.label)
 
 		hlayout.addWidget(widget3)
+		container = QtWidgets.QWidget()
+		self.vlayout = QtWidgets.QVBoxLayout(container)
+		self.mainLayout.addWidget(container)
+		#container.hide()
 
 	def updatePixmapStr(self, name, set_to=True) :
 

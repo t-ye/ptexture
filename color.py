@@ -73,18 +73,43 @@ def hsv2rgb(hsv) :
 	rgb[rgb >= 256] -= 1
 	return rgb
 
-from collections import namedtuple
+# from collections import namedtuple
+import typing
+from dataclasses import dataclass
 
+
+colorformats = dict()
 """
 A colorformat instance is a lightweight wrapper over a PyQt QImage
 format enum member. Such enum members are no more than numeric
 constants. This encourages us to provide this colorformat class, which
 induces structure on those numeric constants.
 """
-colorformat = namedtuple('colorformat', 'wrapped channels')
+#colorformat = namedtuple('colorformat', 'wrapped channels')
+@dataclass(frozen=True)
+class colorformat_base():
+	name : str
+	wrapped : type(QtGui.QImage.Format_Grayscale8)
+	channels : typing.Tuple[int]
 
-gray8 = colorformat(QtGui.QImage.Format_Grayscale8, (8,))
-rgb888 = colorformat(QtGui.QImage.Format_RGB888, (8,8,8))
-rgb565 = colorformat(QtGui.QImage.Format_RGB16, (5,6,5))
-rgb555 = colorformat(QtGui.QImage.Format_RGB555, (1,5,5,5))
+class colorformat(colorformat_base) :
+
+	def __new__(cls, name, wrapped = None, channels = None) :
+		if name in colorformats :
+			return colorformats[name]
+		else :
+			return super().__new__(cls)
+
+	def __init__(self, name, wrapped = None, channels = None) :
+		if name in colorformats :
+			return
+		super().__init__(name, wrapped, channels)
+		colorformats[name] = self
+
+from dataclasses import dataclass
+
+gray8 = colorformat('gray8', QtGui.QImage.Format_Grayscale8, (8,))
+rgb888 = colorformat('rgb888', QtGui.QImage.Format_RGB888, (8,8,8))
+rgb565 = colorformat('rgb565', QtGui.QImage.Format_RGB16, (5,6,5))
+rgb555 = colorformat('rgb555', QtGui.QImage.Format_RGB555, (1,5,5,5))
 

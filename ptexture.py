@@ -12,48 +12,46 @@ def partial_ext(f, *args1, **kwargs1) :
 import typing
 import color
 
+
+ptextures = dict()
+
 class ptexture() :
 
-	def __init__(self, texturefun :
-	                   	typing.Callable[...,(np.ndarray,color.colorformat)],
-										 reqd_kwargs :
-										 	set = set(),
-										 default_kwargs :
-										 	dict = dict()) :
-		self.texturefun = texturefun
-		self.reqd_kwargs = reqd_kwargs
-		self.default_kwargs = default_kwargs
-		self.base = base
+	def __new__(cls, name, texturefun, kwargs) :
+		if name in ptextures :
+			return ptexturers[name]
+		else :
+			return super(ptexture, cls).__new__(cls)
 
-		if self.base is not None :
-			self.reqd_kwargs.update(self.base.reqd_kwargs)
-			self.default_kwargs = dict(base.default_kwargs, **self.default_kwargs)
+	def __init__(self, name :
+	                    str,
+		                 texturefun :
+	                   	typing.Callable[...,(np.ndarray,color.colorformat)],
+		                 kwargs :
+										 	typing.List[typing.Any]) :
+		if name in ptextures :
+			return
+			#raise ValueError('Ptexture already exists: ' + self.name)
+		self.name = name
+		ptextures[self.name] = self
+		self.texturefun = texturefun
+		self.kwargs, self.type_hints = zip(*kwargs)
+
 
 	def partial(self, **kwargs) :
 		import copy
 		texture = copy.deepcopy(self)
-		texture.reqd_kwargs -= kwargs.keys()
-		texture.default_kwargs.update(kwargs)
+		texture.kwargs.update(kwargs)
 		return texture
 
 	def __call__(self, **kwargs) :
-		#if self.base is not None :
-		#	base_arr, base_fmt = self.base(**kwargs)
-		#	if 'fmt' not in kwargs :
-		#		kwargs['fmt'] = fmt
-		#	kwargs['base'] = base_arr
 
-		if not self.reqd_kwargs.issubset(kwargs) :
+		if not set(kwargs.keys()).issuperset(self.kwargs) :
 			raise ValueError('Not enough kwargs: ' + \
-				str(self.reqd_kwargs - kwargs.keys()) + ' missing')
+				str(set(self.kwargs) - kwargs.keys()) + ' missing')
 
 		# defaults updated with override
-		kwargs = dict(self.default_kwargs, **kwargs)
-
 		return self.texturefun(**kwargs)
-
-
-
 
 def noisefun(**kwargs) :
 
@@ -71,8 +69,9 @@ def noisefun(**kwargs) :
 
 	return (arr, fmt)
 
-noise = ptexture(noisefun, {'R', 'C'}, {'fmt' : color.gray8})
-colornoise = ptexture(noisefun, {'R', 'C'}, {'fmt' : color.rgb888})
+noise = ptexture('noise', noisefun, [('R', int), ('C', int), ('fmt',
+color.colorformat)])
+#colornoise = ptexture('colornoise', noisefun, {'R', 'C'}, {'fmt' : color.rgb888})
 
 
 def wood_generator(base, **kwargs) :
@@ -88,7 +87,7 @@ def wood_generator(base, **kwargs) :
 	d = np.sqrt(x**2 + y**2) + power * turbulence(base, size) / 256
 	return 128 * np.abs(np.sin(2 * period * d * np.pi))
 
-wood = ptexture(wood_generator, {'period', 'power', 'size'}, base=noise)
+#wood = ptexture('wood', wood_generator, {'period', 'power', 'size'}, base=noise)
 
 def zoomed_smooth_noise(**kwargs) :
 
@@ -154,7 +153,7 @@ def zoomed_smooth_noise(**kwargs) :
 #
 #	return v
 
-zsn = ptexture(zoomed_smooth_noise, set(), {'zoom':8}, base=noise)
+#zsn = ptexture('zsn', zoomed_smooth_noise, set(), {'zoom':8}, base=noise)
 
 def turbulence(base, size) :
 
@@ -169,7 +168,7 @@ def turbulence(base, size) :
 
 	return v / (2*isize)
 
-turb = ptexture(turbulence, {'size'}, {'size':64}, noise)
+#turb = ptexture('turbulence', turbulence, {'size'}, {'size':64}, noise)
 
 #noise = ptexture(texturefun(noise, ))
 #wood = ptexture(wood_generator, noise)
