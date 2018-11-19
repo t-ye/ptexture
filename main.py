@@ -32,7 +32,7 @@ class Main(QtWidgets.QMainWindow) :
 
 		self.show()
 
-	def addpTexture(self, ptexture : texturers.ptexture) :
+	def addpTexture(self, ptexture : ptexture.ptexture) :
 
 		#base = ptexture.base
 		#while base is not None :
@@ -62,22 +62,22 @@ class Main(QtWidgets.QMainWindow) :
 
 		from functools import partial
 		#import ptexture
-		from texturers import noisefun
-		import texturers
+		from ptexture import noisefun
+		import ptexture
 		from partial_ext import partial_ext
 		import color
 
-		self.addpTexture(texturers.noise)
-		self.addpTexture(texturers.colornoise)
+		self.addpTexture(ptexture.noise)
+		self.addpTexture(ptexture.colornoise)
 
 		self.updateTexture(0)
-		#self.addTexture('noise', texturers.noise)
+		#self.addTexture('noise', ptexture.noise)
 		#self.addTexture('colornoise',
 		#               partial_ext(noisefun, R=rows, C=cols,
 		#							             fmt=color.rgb888))
-		#self.addTexture('zoomed smooth noise', texturers.zsn, base_name='noise')
+		#self.addTexture('zoomed smooth noise', ptexture.zsn, base_name='noise')
 		#self.addTexture('zoomed smooth colornoise',
-		#                partial_ext(texturers.zoomed_smooth_noise, zoom=4),
+		#                partial_ext(ptexture.zoomed_smooth_noise, zoom=4),
 		#                base_name='colornoise')
 		#self.addTexture('blur', blur, base_name='noise')
 		#self.addTexture('colorblur', blur, base_name='colornoise')
