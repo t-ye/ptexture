@@ -42,7 +42,7 @@ class Main(QtWidgets.QMainWindow) :
 		#	base = base.base
 
 		self.ptextures.append(ptexture)
-		self.comboBox.addItem(str(self.comboBox.count()))
+		self.comboBox.addItem(ptexture.name)
 
 	def updateTexture(self, idx) :
 
@@ -155,8 +155,8 @@ class Main(QtWidgets.QMainWindow) :
 
 		#self.paramComboBox = QtWidgets.QComboBox(self)
 
-		self.new_noise = QtWidgets.QPushButton('new noise')
-		self.new_noise.clicked.connect(lambda : self.createPixmaps())
+		#self.new_noise = QtWidgets.QPushButton('new noise')
+		#self.new_noise.clicked.connect(lambda : self.createPixmaps())
 		self.next = QtWidgets.QPushButton('next')
 		self.next.clicked.connect(lambda :
 			self.comboBox.setCurrentIndex((self.comboBox.currentIndex() + 1) %
@@ -184,7 +184,7 @@ class Main(QtWidgets.QMainWindow) :
 
 		# add to mainLayout
 
-		vlayout.addWidget(self.new_noise)
+		#vlayout.addWidget(self.new_noise)
 
 		widget2 = QtWidgets.QWidget()
 		changer = QtWidgets.QHBoxLayout(widget2)
