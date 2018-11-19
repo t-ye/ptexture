@@ -6,6 +6,7 @@ import npqt
 import color
 from color import channelsplit, hsv2rgb
 from typing import Callable
+import ptexture
 
 #black = np.zeros((300, 300), dtype=np.uint8)
 rows = 1080
@@ -67,28 +68,34 @@ class Main(QtWidgets.QMainWindow) :
 			widget.setParent(None)
 			widget.deleteLater()
 
-		def buttonAction(kwarg) :
+		def buttonAction(kwarg, first=False) :
 			def inner() :
 				new, ok = \
 				QtWidgets.QInputDialog.getText(self, '', 'Enter value of ' + kwarg,
 				QtWidgets.QLineEdit.Normal, '')
 				if ok :
-					self.ptextures_dict[kwarg] = new
+					self.ptextures_dict[kwarg] = self.ptextures_dict_types[kwarg](new)
+				if not first :
+					self.updateImage()
 			return inner
 
-		for kwarg in texture.kwargs :
-			buttonAction(kwarg)()
-			button = QtWidgets.QPushButton(kwarg)
-			button.clicked.connect(buttonAction(kwarg))
-			self.vlayout.addWidget(button)
+
+		def addButtons(texture) :
+			for kwarg in texture.kwargs :
+				buttonAction(kwarg, True)()
+				button = QtWidgets.QPushButton(kwarg)
+				button.clicked.connect(buttonAction(kwarg))
+				self.vlayout.addWidget(button)
+				if self.ptextures_dict_types[kwarg] == ptexture.ptexture :
+					addButtons(self.ptextures_dict[kwarg])
+
+		addButtons(texture)
+
+		self.updateImage()
 
 
-		dct = {k:self.ptextures_dict_types[k](v) for k,v in self.ptextures_dict.items()}
-
-		im = npqt.arr_to_image(*texture(**dct))
-
-
-
+	def updateImage(self) :
+		im = npqt.arr_to_image(*self.ptextures[self.curr_idx](**self.ptextures_dict))
 		pm = QtGui.QPixmap(im)
 		self.label.setPixmap(pm)
 
@@ -104,59 +111,14 @@ class Main(QtWidgets.QMainWindow) :
 		import color
 
 		self.addpTexture(ptexture.noise)
-		#self.addpTexture(ptexture.colornoise)
 
 		self.updateTexture(0)
-		#self.addTexture('noise', ptexture.noise)
-		#self.addTexture('colornoise',
-		#               partial_ext(noisefun, R=rows, C=cols,
-		#							             fmt=color.rgb888))
-		#self.addTexture('zoomed smooth noise', ptexture.zsn, base_name='noise')
-		#self.addTexture('zoomed smooth colornoise',
-		#                partial_ext(ptexture.zoomed_smooth_noise, zoom=4),
-		#                base_name='colornoise')
-		#self.addTexture('blur', blur, base_name='noise')
-		#self.addTexture('colorblur', blur, base_name='colornoise')
-		#self.addTexture('turbulence',
-		#               partial_ext(turbulence, zoom=64),
-		#							 base_name='noise')
-		#self.addTexture('blueturbulence',
-		#                lambda **kwargs : (kwargs['base'], kwargs['fmt']),
-		#							  base_name='turbulence',
-		#							  imgfy=npqt.g8_to_blue)
-		#self.addTexture('colorturbulence',
-		#                partial_ext(turbulence, zoom=64),
-		#							  base_name='colornoise')
-		#self.addTexture('marblebase',
-		#                partial_ext(marble_base, R=rows, C=cols))
-		#self.addTexture('marble',
-		#                marble_true,
-		#								base_name = 'noise')
-		#self.addTexture('colormarble',
-		#                marble_true,
-		#								base_name = 'colornoise')
-		#self.addTexture('wood base', partial_ext(wood_base, R=rows, C=cols))
-		#self.addTexture('wood', wood, base_name='noise')
-		#self.addTexture('brownwood',
-		#                lambda **kwargs : (kwargs['base'], kwargs['fmt']),
-		#                imgfy=npqt.g8_to_brown,
-		#								base_name='wood')
-		#self.addTexture('weird base', partial(weird_base, R=rows, C=cols),
-		#imgfy=npqt.arr_to_reds)
-		#self.addTexture('weird', partial(weird), base_name='noise',
-		#imgfy=npqt.arr_to_reds)
-
-		#self.updatePixmapStr('noise')
 
 	def createWidgets(self) :
 		self.vlayout = None
 		self.label = QtWidgets.QLabel()
 		self.label.setScaledContents(True) # auto resize
 
-		#self.paramComboBox = QtWidgets.QComboBox(self)
-
-		#self.new_noise = QtWidgets.QPushButton('new noise')
-		#self.new_noise.clicked.connect(lambda : self.createPixmaps())
 		self.next = QtWidgets.QPushButton('next')
 		self.next.clicked.connect(lambda :
 			self.comboBox.setCurrentIndex((self.comboBox.currentIndex() + 1) %
@@ -169,7 +131,7 @@ class Main(QtWidgets.QMainWindow) :
 		                                self.comboBox.count()
 			)
 		)
-		self.comboBox =  QtWidgets.QComboBox(self)
+		self.comboBox = QtWidgets.QComboBox(self)
 		self.comboBox.currentIndexChanged.connect(lambda idx : self.updateTexture(idx))
 
 	def setupLayout(self) :
