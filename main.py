@@ -170,7 +170,6 @@ class Main(QtWidgets.QMainWindow) :
 			)
 		)
 		self.comboBox =  QtWidgets.QComboBox(self)
-		#self.comboBox.currentTextChanged.connect(lambda s : self.updatePixmapStr(s))
 		self.comboBox.currentIndexChanged.connect(lambda idx : self.updateTexture(idx))
 
 	def setupLayout(self) :
@@ -436,43 +435,3 @@ if __name__ == '__main__' :
 	window = Main()
 
 	app.exec_()
-
-#def addTexture(self, name : str,
-#	                    generator : Callable[...,(np.ndarray,color.colorformat)],
-#											base_name : str = None,
-#											imgfy : Callable[[np.ndarray], QtGui.QImage] = None) :
-#
-#		# allow lazy generation of bases
-#		self.bases[name] = (generator, None, None, base_name)
-#		#                   generator array format base_name
-#
-#		def pixmapGenerator() :
-#			nonlocal generator
-#			nonlocal base_name
-#			nonlocal imgfy
-#
-#			if imgfy is None : # default
-#				imgfy = npqt.arr_to_image
-#
-#			if base_name is None : # no base
-#				arr, fmt = generator(**default_kwargs)
-#			else :
-#				# get base info
-#				base_generator, base, fmt, bb_name = self.bases[base_name]
-#
-#				if base is None : # bases needs to be generated
-#
-#					self.updatePixmapStr(base_name, set_to=False)
-#
-#				_, base, fmt, _ = self.bases[base_name]
-#				arr, fmt = generator(base=base, fmt=fmt, **default_kwargs)
-#
-#			self.bases[name] = (generator, arr, fmt, base_name)
-#
-#			im = imgfy(arr, fmt) # ????
-#			pixmap = QtGui.QPixmap(im)
-#
-#			return pixmap
-#
-#		self.pixmapStr[name] = pixmapGenerator
-#		self.comboBox.addItem(name)
