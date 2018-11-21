@@ -1,6 +1,17 @@
 from __future__ import annotations
 import PyQt5.QtWidgets as QtWidgets
 import PyQt5.QtGui as QtGui
+
+if __name__ == '__main__' :
+	app = QtWidgets.QApplication([])
+
+def screen_resolution() :
+	global app
+
+	rect = app.desktop().screenGeometry()
+	width, height = rect.width(), rect.height()
+	return (width, height)
+
 import numpy as np
 import npqt
 import color
@@ -56,9 +67,9 @@ class Main(QtWidgets.QMainWindow) :
 
 		texture = self.ptextures[idx]
 
-		self.ptextures_dict = {key:None for key in texture.kwargs}
-		self.ptextures_dict_types = {key:t for key,t in zip(texture.kwargs,
-		texture.type_hints)}
+		self.ptextures_dict = {key:None for key in texture.params}
+		self.ptextures_dict_types = {key:t for key,t in zip(texture.params,
+		texture.types)}
 
 
 		# clear vlayout
@@ -68,26 +79,32 @@ class Main(QtWidgets.QMainWindow) :
 			widget.setParent(None)
 			widget.deleteLater()
 
-		def buttonAction(kwarg, first=False) :
+		def buttonAction(param, first=False) :
 			def inner() :
+				i = texture.params.index(param)
+				default = texture.defaults[i]
 				new, ok = \
-				QtWidgets.QInputDialog.getText(self, '', 'Enter value of ' + kwarg,
-				QtWidgets.QLineEdit.Normal, '')
+				QtWidgets.QInputDialog.getText(self, '',
+						f'Enter value of {param} (default is {str(default)}) :',
+						QtWidgets.QLineEdit.Normal, '')
 				if ok :
-					self.ptextures_dict[kwarg] = self.ptextures_dict_types[kwarg](new)
+					if new == '' :
+						new = default
+					self.ptextures_dict[param] = self.ptextures_dict_types[param](new)
+
 				if not first :
 					self.updateImage()
 			return inner
 
 
 		def addButtons(texture) :
-			for kwarg in texture.kwargs :
-				buttonAction(kwarg, True)()
-				button = QtWidgets.QPushButton(kwarg)
-				button.clicked.connect(buttonAction(kwarg))
+			for param in texture.params :
+				buttonAction(param, True)()
+				button = QtWidgets.QPushButton(param)
+				button.clicked.connect(buttonAction(param))
 				self.vlayout.addWidget(button)
-				if self.ptextures_dict_types[kwarg] == ptexture.ptexture :
-					addButtons(self.ptextures_dict[kwarg])
+				if self.ptextures_dict_types[param] == ptexture.ptexture :
+					addButtons(self.ptextures_dict[param])
 
 		addButtons(texture)
 
@@ -110,7 +127,7 @@ class Main(QtWidgets.QMainWindow) :
 		from partial_ext import partial_ext
 		import color
 
-		self.addpTexture(ptexture.noise)
+		self.addpTexture(ptexture.get_noise())
 
 		self.updateTexture(0)
 
@@ -392,8 +409,8 @@ def weird(**kwargs) :
 
 
 if __name__ == '__main__' :
-	app = QtWidgets.QApplication([])
 
 	window = Main()
 
 	app.exec_()
+

@@ -65,9 +65,9 @@ class ptexture() :
 
 	def __call__(self, **kwargs) :
 
-		if not set(kwargs.keys()).issuperset(self.kwargs) :
+		if not set(kwargs.keys()).issuperset(self.params) :
 			raise ValueError('Not enough kwargs: ' + \
-				str(set(self.kwargs) - kwargs.keys()) + ' missing')
+				str(set(self.params) - kwargs.keys()) + ' missing')
 
 		# defaults updated with override
 		return self.texturefun(**kwargs)
@@ -88,8 +88,15 @@ def noisefun(**kwargs) :
 
 	return (arr, fmt)
 
-noise = ptexture('noise', noisefun,
-	[('R', int), ('C', int), ('fmt', color.colorformat)])
+
+def get_noise() :
+	import main
+	screen_width, screen_height = 1920, 1080
+	return ptexture('noise', noisefun,
+	[('R', int, screen_height),
+	 ('C', int, screen_width),
+	 ('fmt', color.colorformat, 'gray8')])
+
 #colornoise = ptexture('colornoise', noisefun, {'R', 'C'}, {'fmt' : color.rgb888})
 
 
