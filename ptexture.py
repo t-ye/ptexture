@@ -35,20 +35,32 @@ class ptexture() :
 		                 texturefun :
 	                   	typing.Callable[...,(np.ndarray,color.colorformat)],
 		                 kwargs :
-										 	typing.List[typing.Any]) :
+										 	typing.List[ptexture_param]) :
 		if name in ptextures :
 			return
 			#raise ValueError('Ptexture already exists: ' + self.name)
 		self.name = name
 		ptextures[self.name] = self
 		self.texturefun = texturefun
-		self.kwargs, self.type_hints = zip(*kwargs)
+		self.params, self.types, self.defaults = zip(*kwargs)
 
 
 	def partial(self, **kwargs) :
 		import copy
-		texture = copy.deepcopy(self)
-		texture.kwargs.update(kwargs)
+		partialled = copy.deepcopy(self)
+		for param,value in kwargs :
+			if param in partialled.params :
+				try :
+					i = partialled.params.index(param)
+					partialled.params.pop(i)
+					types.pop(i)
+					params.pop(i)
+
+				except ValueError :
+					pass
+
+
+		texture.params.update(kwargs)
 		return texture
 
 	def __call__(self, **kwargs) :
