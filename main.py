@@ -1,6 +1,7 @@
 from __future__ import annotations
 import PyQt5.QtWidgets as QtWidgets
 import PyQt5.QtGui as QtGui
+import PyQt5.QtCore as QtCore
 
 if __name__ == '__main__' :
 	app = QtWidgets.QApplication([])
@@ -31,7 +32,7 @@ class Main(QtWidgets.QMainWindow) :
 	def __init__(self) :
 
 		super().__init__()
-		self.ptextures_dict = None
+		self.ptextures_dict = dict()
 		self.curr_idx = None
 
 		#self.curr_idx = None
@@ -45,6 +46,9 @@ class Main(QtWidgets.QMainWindow) :
 		self.createPixmaps()
 
 		self.show()
+		self.showMaximized()
+		self.showMaximized()
+		#self.setWindowState(QtCore.Qt.WindowMaximized)
 
 	def addpTexture(self, ptexture : ptexture.ptexture) :
 
@@ -67,9 +71,11 @@ class Main(QtWidgets.QMainWindow) :
 
 		texture = self.ptextures[idx]
 
-		self.ptextures_dict = {key:None for key in texture.params}
-		self.ptextures_dict_types = {key:t for key,t in zip(texture.params,
-		texture.types)}
+
+		self.ptextures_dict.clear()
+		#self.ptextures_dict = {param.name:None for param in texture.params}
+		#self.ptextures_dict_types = {key:t for key,t in zip(texture.params,
+		#texture.types)}
 
 
 		# clear vlayout
@@ -81,18 +87,21 @@ class Main(QtWidgets.QMainWindow) :
 
 		def buttonAction(param, first=False) :
 			def inner() :
-				i = texture.params.index(param)
-				default = texture.defaults[i]
+				#i = texture.params.index(param)
+				#default = texture.defaults[i]
+				default = param.default
 				new, ok = \
 				QtWidgets.QInputDialog.getText(self, '',
-						f'Enter value of {param} (default is {str(default)}) :',
+						f'Enter value of {param.name} (default is {default}) :',
 						QtWidgets.QLineEdit.Normal, '')
 				if ok :
 					if new == '' :
 						new = default
-					self.ptextures_dict[param] = self.ptextures_dict_types[param](new)
+					#self.ptextures_dict[param.name] = self.ptextures_dict_types[param](new)
+					self.ptextures_dict[param.name] = param.type(new)
 
-				if not first :
+				if ok and not first :
+
 					self.updateImage()
 			return inner
 
@@ -100,10 +109,11 @@ class Main(QtWidgets.QMainWindow) :
 		def addButtons(texture) :
 			for param in texture.params :
 				buttonAction(param, True)()
-				button = QtWidgets.QPushButton(param)
+				button = QtWidgets.QPushButton(param.name)
 				button.clicked.connect(buttonAction(param))
 				self.vlayout.addWidget(button)
-				if self.ptextures_dict_types[param] == ptexture.ptexture :
+				# recurse
+				if param.type == ptexture.ptexture :
 					addButtons(self.ptextures_dict[param])
 
 		addButtons(texture)

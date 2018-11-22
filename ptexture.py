@@ -8,18 +8,16 @@ def partial_ext(f, *args1, **kwargs1) :
 		return partial(f, *args1, *args2, **kwargs1, **kwargs2)
 	return ff
 
-
 import typing
 import color
 import dataclasses
 
-
 ptextures = dict()
 
 @dataclasses.dataclass(frozen=True)
-class ptexture_param() :
+class typed_param() :
 	name : str
-	Type : type
+	type : type
 	default : Type
 
 class ptexture() :
@@ -34,7 +32,7 @@ class ptexture() :
 	                    str,
 		                 texturefun :
 	                   	typing.Callable[...,(np.ndarray,color.colorformat)],
-		                 kwargs :
+		                 params :
 										 	typing.List[ptexture_param]) :
 		if name in ptextures :
 			return
@@ -42,7 +40,8 @@ class ptexture() :
 		self.name = name
 		ptextures[self.name] = self
 		self.texturefun = texturefun
-		self.params, self.types, self.defaults = zip(*kwargs)
+		#self.params, self.types, self.defaults = zip(*kwargs)
+		self.params = list(map(lambda params : typed_param(*params), params))
 
 
 	def partial(self, **kwargs) :
@@ -65,9 +64,9 @@ class ptexture() :
 
 	def __call__(self, **kwargs) :
 
-		if not set(kwargs.keys()).issuperset(self.params) :
-			raise ValueError('Not enough kwargs: ' + \
-				str(set(self.params) - kwargs.keys()) + ' missing')
+		#if not set(kwargs.keys()).issuperset(self.params) :
+		#	raise ValueError('Not enough kwargs: ' + \
+		#		str(set(self.params) - kwargs.keys()) + ' missing')
 
 		# defaults updated with override
 		return self.texturefun(**kwargs)
