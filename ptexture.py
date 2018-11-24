@@ -22,18 +22,18 @@ class typed_param() :
 
 class ptexture() :
 
-	def __new__(cls, name, texturefun, kwargs) :
+	def __new__(cls, name, texturefun = None, kwargs = None) :
 		if name in ptextures :
-			return ptexturers[name]
+			return ptextures[name]
 		else :
 			return super(ptexture, cls).__new__(cls)
 
 	def __init__(self, name :
 	                    str,
 		                 texturefun :
-	                   	typing.Callable[...,(np.ndarray,color.colorformat)],
+	                   	typing.Callable[...,(np.ndarray,color.colorformat)] = None,
 		                 params :
-										 	typing.List[ptexture_param]) :
+										 	typing.List[ptexture_param] = None) :
 		if name in ptextures :
 			return
 			#raise ValueError('Ptexture already exists: ' + self.name)
@@ -71,6 +71,9 @@ class ptexture() :
 
 		# defaults updated with override
 		return self.texturefun(**kwargs)
+
+	def __str__(self) :
+		return f'ptexture {self.name}'
 
 def noisefun(**kwargs) :
 
@@ -115,12 +118,12 @@ def wood_generator(base, **kwargs) :
 
 #wood = ptexture('wood', wood_generator, {'period', 'power', 'size'}, base=noise)
 
-def zoomed_smooth_noise(**kwargs) :
+def zoomed_smooth(**kwargs) :
 
 	import numpy as np
 
 	zoom = kwargs['zoom']
-	base = kwargs['base']
+	base = kwargs['base']()[0]
 	zoom = kwargs['zoom']
 	fmt = kwargs['fmt']
 	# m assumed 2D
@@ -148,38 +151,11 @@ def zoomed_smooth_noise(**kwargs) :
 
 	return (v, fmt)
 
-#def zoomed_smooth_noise(**kwargs) :
-#
-#	import numpy as np
-#
-#	base = kwargs['base']
-#	R,C = kwargs['R'], kwargs['C']
-#	zoom = kwargs['zoom']
-#
-#	# base assumed 2D
-#
-#	#idxs = np.arange(R, dtype=np.float).repeat(C).reshape(R,C)
-#	idxs = np.indices(base.shape[:2]) # (2, R, C, 1)
-#
-#	# get ranges corresonding to the top left (1/zoom)th
-#	# portion of the matrix
-#	f, i = np.modf(idxs / zoom) # each (2, R, C, 1)
-#	x, y = i.astype(np.int)
-#	xf, yf = f
-#
-#
-#	# up, left (negative indices allowed!)
-#	u = (x-1)
-#	l = (y-1)
-#
-#	v  =    xf  *    yf  * base[x,y]
-#	v += (1-xf) *    yf  * base[u,y]
-#	v +=    xf  * (1-yf) * base[x,l]
-#	v += (1-xf) * (1-yf) * base[u,l]
-#
-#	return v
-
-#zsn = ptexture('zsn', zoomed_smooth_noise, set(), {'zoom':8}, base=noise)
+def get_zs(base) :
+	return ptexture('zs', zoomed_smooth,
+		[('zoom', int, 8),
+		 ('base', ptexture, base.name)
+		])
 
 def turbulence(base, size) :
 
@@ -189,7 +165,7 @@ def turbulence(base, size) :
 	isize = size
 
 	while size >= 1 :
-		v += zoomed_smooth_noise(base, size) * size
+		v += zoomed_smooth(base, size) * size
 		size /= 2
 
 	return v / (2*isize)
