@@ -42,6 +42,7 @@ class ptexture() :
 		self.texturefun = texturefun
 		#self.params, self.types, self.defaults = zip(*kwargs)
 		self.params = list(map(lambda params : typed_param(*params), params))
+		self.params_dict = {param.name : param for param in self.params}
 
 
 	def partial(self, **kwargs) :

@@ -46,9 +46,11 @@ class Main(QtWidgets.QMainWindow) :
 		self.createPixmaps()
 
 		self.show()
-		self.showMaximized()
-		self.showMaximized()
+		#print(input())
 		#self.setWindowState(QtCore.Qt.WindowMaximized)
+
+	#def changeEvent(self, event) :
+	#	print(event)
 
 	def addpTexture(self, ptexture : ptexture.ptexture) :
 
@@ -72,7 +74,8 @@ class Main(QtWidgets.QMainWindow) :
 		texture = self.ptextures[idx]
 
 
-		self.ptextures_dict.clear()
+		self.ptextures_dict = {param.name : param.type(param.default)
+				for param in texture.params}
 		#self.ptextures_dict = {param.name:None for param in texture.params}
 		#self.ptextures_dict_types = {key:t for key,t in zip(texture.params,
 		#texture.types)}
@@ -94,29 +97,61 @@ class Main(QtWidgets.QMainWindow) :
 				QtWidgets.QInputDialog.getText(self, '',
 						f'Enter value of {param.name} (default is {default}) :',
 						QtWidgets.QLineEdit.Normal, '')
-				if ok :
-					if new == '' :
-						new = default
-					#self.ptextures_dict[param.name] = self.ptextures_dict_types[param](new)
-					self.ptextures_dict[param.name] = param.type(new)
+				if not ok or new == '' :
+					new = default
+				self.ptextures_dict[param.name] = param.type(new)
 
 				if ok and not first :
-
 					self.updateImage()
 			return inner
 
 
 		def addButtons(texture) :
 			for param in texture.params :
-				buttonAction(param, True)()
-				button = QtWidgets.QPushButton(param.name)
-				button.clicked.connect(buttonAction(param))
-				self.vlayout.addWidget(button)
+				#buttonAction(param, True)()
+
+				hlayout_widget = QtWidgets.QWidget()
+				hlayout = QtWidgets.QHBoxLayout(hlayout_widget)
+
+				label = QtWidgets.QLabel(param.name)
+				old = QtWidgets.QLabel(str(param.default))
+				new = QtWidgets.QLineEdit()
+
+				hlayout.addWidget(label)
+				hlayout.addWidget(old)
+				hlayout.addWidget(new)
+
+				#button = QtWidgets.QPushButton(param.name)
+				#button.clicked.connect(buttonAction(param))
+				self.vlayout.addWidget(hlayout.parent())
 				# recurse
 				if param.type == ptexture.ptexture :
 					addButtons(self.ptextures_dict[param])
 
+
+		def update() :
+
+			for i in range(self.vlayout.count()-1) :
+				widget = self.vlayout.itemAt(i).widget()
+				child = widget.findChildren(QtWidgets.QHBoxLayout)[0]
+				name = child.itemAt(0).widget()
+				old, new = child.itemAt(1).widget(), child.itemAt(2).widget()
+
+				if new.text() == '' :
+					new.setText(old.text())
+
+				self.ptextures_dict[name.text()] = \
+					texture.params_dict[name.text()].type(new.text())
+
+				old.setText(new.text())
+				new.setText('')
+
+			self.updateImage()
+
 		addButtons(texture)
+		button = QtWidgets.QPushButton('Update')
+		button.clicked.connect(update)
+		self.vlayout.addWidget(button)
 
 		self.updateImage()
 
