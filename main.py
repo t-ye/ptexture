@@ -87,10 +87,13 @@ class Main(QtWidgets.QMainWindow) :
 			widget.deleteLater()
 
 
-		def addButtons(texture) :
-			label = QtWidgets.QLabel(texture.name)
+		def addButtons(tex) :
+			label = QtWidgets.QLabel(tex.name)
 			self.vlayout.addWidget(label)
-			for param in texture.params :
+			# move dropdown here
+			print(tex.params)
+			for param in tex.params :
+				print(tex, param)
 				#buttonAction(param, True)()
 
 				hlayout_widget = QtWidgets.QWidget()
@@ -116,12 +119,15 @@ class Main(QtWidgets.QMainWindow) :
 		def update() :
 
 			texture_name = None
-			for i in range(self.vlayout.count()-1) :
+			for i in range(self.vlayout.count()) :
 				widget = self.vlayout.itemAt(i).widget()
 				if type(widget) == QtWidgets.QLabel :
 					texture_name = widget.text()
 					continue
-				child = widget.findChildren(QtWidgets.QHBoxLayout)[0]
+				children = widget.findChildren(QtWidgets.QHBoxLayout)
+				if len(children) == 0 :
+					continue
+				child = children[0]
 				name = child.itemAt(0).widget()
 				old, new = child.itemAt(1).widget(), child.itemAt(2).widget()
 
@@ -129,7 +135,7 @@ class Main(QtWidgets.QMainWindow) :
 					new.setText(old.text())
 
 				self.ptextures_dict[texture_name][name.text()] = \
-					texture.params_dict[name.text()].type(new.text())
+					ptexture.ptexture(texture_name).params_dict[name.text()].type(new.text())
 
 				old.setText(new.text())
 				new.setText('')
@@ -159,13 +165,11 @@ class Main(QtWidgets.QMainWindow) :
 		#import ptexture
 		from ptexture import noisefun
 		import ptexture
-		from partial_ext import partial_ext
 		import color
 
 		noise = ptexture.get_noise()
 		self.addpTexture(noise)
 		self.addpTexture(ptexture.get_zs(noise))
-		self.updateTexture(0)
 
 	def createWidgets(self) :
 		self.vlayout = None

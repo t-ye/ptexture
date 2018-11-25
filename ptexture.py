@@ -70,7 +70,21 @@ class ptexture() :
 		#		str(set(self.params) - kwargs.keys()) + ' missing')
 
 		# defaults updated with override
-		return self.texturefun(**kwargs)
+		i = 0
+		for texture_name in kwargs.keys() :
+			if texture_name != self.name :
+				while i < len(self.params) and self.params[i].type != ptexture :
+					i += 1
+				if i == len(self.params) :
+					break
+				param = self.params[i]
+				kwargs[self.name][param.name] = \
+				ptexture(texture_name)(**kwargs)
+
+
+		#print(self)
+		#print(list(kwargs[self.name].keys()))
+		return self.texturefun(**kwargs[self.name])
 
 	def __str__(self) :
 		return f'ptexture {self.name}'
@@ -96,8 +110,8 @@ def get_noise() :
 	import main
 	screen_width, screen_height = 1920, 1080
 	return ptexture('noise', noisefun,
-	[('R', int, screen_height),
-	 ('C', int, screen_width),
+	[('C', int, screen_width),
+	 ('R', int, screen_height),
 	 ('fmt', color.colorformat, 'gray8')])
 
 #colornoise = ptexture('colornoise', noisefun, {'R', 'C'}, {'fmt' : color.rgb888})
@@ -123,7 +137,7 @@ def zoomed_smooth(**kwargs) :
 	import numpy as np
 
 	zoom = kwargs['zoom']
-	base = kwargs['base']()[0]
+	base = kwargs['base'][0]
 	zoom = kwargs['zoom']
 	fmt = kwargs['fmt']
 	# m assumed 2D
@@ -154,7 +168,8 @@ def zoomed_smooth(**kwargs) :
 def get_zs(base) :
 	return ptexture('zs', zoomed_smooth,
 		[('zoom', int, 8),
-		 ('base', ptexture, base.name)
+		 ('fmt', color.colorformat, 'gray8'),
+		 ('base', ptexture, base.name) # has to go last
 		])
 
 def turbulence(base, size) :
