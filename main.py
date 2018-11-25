@@ -2,6 +2,9 @@ from __future__ import annotations
 import PyQt5.QtWidgets as QtWidgets
 import PyQt5.QtGui as QtGui
 import PyQt5.QtCore as QtCore
+import collections
+
+QtCore.pyqtRemoveInputHook()
 
 if __name__ == '__main__' :
 	app = QtWidgets.QApplication([])
@@ -32,7 +35,7 @@ class Main(QtWidgets.QMainWindow) :
 	def __init__(self) :
 
 		super().__init__()
-		self.ptextures_dict = dict()
+		self.ptextures_dict = collections.defaultdict(dict)
 		self.curr_idx = None
 
 		#self.curr_idx = None
@@ -74,12 +77,7 @@ class Main(QtWidgets.QMainWindow) :
 		texture = self.ptextures[idx]
 
 
-		self.ptextures_dict = {param.name : param.type(param.default)
-				for param in texture.params}
-		#self.ptextures_dict = {param.name:None for param in texture.params}
-		#self.ptextures_dict_types = {key:t for key,t in zip(texture.params,
-		#texture.types)}
-
+		self.ptextures_dict.clear()
 
 		# clear vlayout
 		for i in reversed(range(self.vlayout.count())):
@@ -88,25 +86,10 @@ class Main(QtWidgets.QMainWindow) :
 			widget.setParent(None)
 			widget.deleteLater()
 
-		def buttonAction(param, first=False) :
-			def inner() :
-				#i = texture.params.index(param)
-				#default = texture.defaults[i]
-				default = param.default
-				new, ok = \
-				QtWidgets.QInputDialog.getText(self, '',
-						f'Enter value of {param.name} (default is {default}) :',
-						QtWidgets.QLineEdit.Normal, '')
-				if not ok or new == '' :
-					new = default
-				self.ptextures_dict[param.name] = param.type(new)
-
-				if ok and not first :
-					self.updateImage()
-			return inner
-
 
 		def addButtons(texture) :
+			label = QtWidgets.QLabel(texture.name)
+			self.vlayout.addWidget(label)
 			for param in texture.params :
 				#buttonAction(param, True)()
 
@@ -124,15 +107,20 @@ class Main(QtWidgets.QMainWindow) :
 				#button = QtWidgets.QPushButton(param.name)
 				#button.clicked.connect(buttonAction(param))
 				self.vlayout.addWidget(hlayout.parent())
+
 				# recurse
 				if param.type == ptexture.ptexture :
-					addButtons(self.ptextures_dict[param])
+					addButtons(param.type(param.default))
 
 
 		def update() :
 
+			texture_name = None
 			for i in range(self.vlayout.count()-1) :
 				widget = self.vlayout.itemAt(i).widget()
+				if type(widget) == QtWidgets.QLabel :
+					texture_name = widget.text()
+					continue
 				child = widget.findChildren(QtWidgets.QHBoxLayout)[0]
 				name = child.itemAt(0).widget()
 				old, new = child.itemAt(1).widget(), child.itemAt(2).widget()
@@ -140,7 +128,7 @@ class Main(QtWidgets.QMainWindow) :
 				if new.text() == '' :
 					new.setText(old.text())
 
-				self.ptextures_dict[name.text()] = \
+				self.ptextures_dict[texture_name][name.text()] = \
 					texture.params_dict[name.text()].type(new.text())
 
 				old.setText(new.text())
@@ -149,8 +137,10 @@ class Main(QtWidgets.QMainWindow) :
 			self.updateImage()
 
 		addButtons(texture)
+
 		button = QtWidgets.QPushButton('Update')
 		button.clicked.connect(update)
+		update()
 		self.vlayout.addWidget(button)
 
 		self.updateImage()
@@ -172,8 +162,9 @@ class Main(QtWidgets.QMainWindow) :
 		from partial_ext import partial_ext
 		import color
 
-		self.addpTexture(ptexture.get_noise())
-
+		noise = ptexture.get_noise()
+		self.addpTexture(noise)
+		self.addpTexture(ptexture.get_zs(noise))
 		self.updateTexture(0)
 
 	def createWidgets(self) :
@@ -194,7 +185,7 @@ class Main(QtWidgets.QMainWindow) :
 			)
 		)
 		self.comboBox = QtWidgets.QComboBox(self)
-		self.comboBox.currentIndexChanged.connect(lambda idx : self.updateTexture(idx))
+		self.comboBox.currentIndexChanged.connect(self.updateTexture)
 
 	def setupLayout(self) :
 		# setup mainLayout
@@ -203,7 +194,7 @@ class Main(QtWidgets.QMainWindow) :
 		hlayout = QtWidgets.QHBoxLayout(widget)
 		vlayout = QtWidgets.QVBoxLayout(widget3)
 		self.mainLayout = hlayout
-		self.setLayout(self.mainLayout)
+		#self.setLayout(self.mainLayout)
 		self.setCentralWidget(widget)
 
 		# add to mainLayout
