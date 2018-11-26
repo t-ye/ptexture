@@ -70,58 +70,16 @@ class Main(QtWidgets.QMainWindow) :
 			widget.deleteLater()
 
 
+		import PyQt5_ext
+
 		def add_param_gui(tex) :
-			label = QtWidgets.QLabel(tex.name)
-			self.vlayout.addWidget(label)
-			# move dropdown here
-			for param in tex.params :
-
-				hlayout_widget = QtWidgets.QWidget()
-				hlayout = QtWidgets.QHBoxLayout(hlayout_widget)
-
-				label = QtWidgets.QLabel(param.name)
-				old = QtWidgets.QLabel(str(param.default))
-				new = QtWidgets.QLineEdit()
-
-				# TODO : custom type for this
-				hlayout.addWidget(label)
-				hlayout.addWidget(old)
-				hlayout.addWidget(new)
-
-				self.vlayout.addWidget(hlayout.parent())
-
-				# recurse
-				if param.type == ptexture.ptexture :
-					add_param_gui(param.type(param.default))
+			self.param_gui = PyQt5_ext.ptexture_params_gui(tex)
+			self.vlayout.addWidget(self.param_gui)
 
 
 		def update() :
 
-			# this garbage would be a lot better with a custom type
-			# i hate duck typing
-
-			# corresponds to a key of ptextures_dict
-			texture_name = None
-			for i in range(self.vlayout.count()) :
-				widget = self.vlayout.itemAt(i).widget()
-				if type(widget) == QtWidgets.QLabel :
-					texture_name = widget.text()
-					continue
-				children = widget.findChildren(QtWidgets.QHBoxLayout)
-				if len(children) == 0 :
-					continue
-				child = children[0]
-				name = child.itemAt(0).widget()
-				old, new = child.itemAt(1).widget(), child.itemAt(2).widget()
-
-				if new.text() == '' :
-					new.setText(old.text())
-
-				self.ptextures_dict[texture_name][name.text()] = \
-					ptexture.ptexture(texture_name).params_dict[name.text()].type(new.text())
-
-				old.setText(new.text())
-				new.setText('')
+			self.ptextures_dict = self.param_gui.get()
 
 			self.updateImage()
 
@@ -130,8 +88,9 @@ class Main(QtWidgets.QMainWindow) :
 		# send GUI params to dict with this button
 		button = QtWidgets.QPushButton('Update')
 		button.clicked.connect(update)
-		update()
 		self.vlayout.addWidget(button)
+
+		update()
 
 		self.updateImage()
 
