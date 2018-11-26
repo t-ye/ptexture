@@ -1,17 +1,10 @@
 from __future__ import annotations # delayed type hint evaluation
 
-def noise_generator(**kwargs) :
-	import numpy as np
-
-def partial_ext(f, *args1, **kwargs1) :
-	def	ff(*args2, **kwargs2) :
-		return partial(f, *args1, *args2, **kwargs1, **kwargs2)
-	return ff
-
 import typing
 import color
 import dataclasses
 
+# all ptextures
 ptextures = dict()
 
 @dataclasses.dataclass(frozen=True)
@@ -65,11 +58,8 @@ class ptexture() :
 
 	def __call__(self, **kwargs) :
 
-		#if not set(kwargs.keys()).issuperset(self.params) :
-		#	raise ValueError('Not enough kwargs: ' + \
-		#		str(set(self.params) - kwargs.keys()) + ' missing')
-
 		# defaults updated with override
+		# TODO : enforce placement of ptextures in kwargs
 		i = 0
 		for texture_name in kwargs.keys() :
 			if texture_name != self.name :
@@ -82,8 +72,6 @@ class ptexture() :
 				ptexture(texture_name)(**kwargs)
 
 
-		#print(self)
-		#print(list(kwargs[self.name].keys()))
 		return self.texturefun(**kwargs[self.name])
 
 	def __str__(self) :
@@ -152,14 +140,9 @@ def zoomed_smooth(**kwargs) :
 	u = (x-1)
 	l = (y-1)
 
-	#depth = 1 if base.ndim == 2 else base.shape[2]
-
-	#t = time()
-	#v  = (   xf  *    yf ).repeat(depth).reshape(base.shape) * base[x,y] \
-	#   + ((1-xf) *    yf ).repeat(depth).reshape(base.shape) * base[u,y] \
-	#   + (   xf  * (1-yf)).repeat(depth).reshape(base.shape) * base[x,l] \
-	#   + ((1-xf) * (1-yf)).repeat(depth).reshape(base.shape) * base[u,l]
-
+	# If base is 2D, do entrywise multiplication;
+	# else, multiply each depth vector in the 2nd matrix with
+	# each scalar entry in the 1st matrix
 	einsum_str = 'ij,ij->ij' if base.ndim == 2 else 'ij,ijk->ijk'
 
 	v = np.einsum(einsum_str,    xf  *    yf , base[x,y]) \

@@ -1,10 +1,8 @@
 from __future__ import annotations
-import PyQt5.QtWidgets as QtWidgets
-import PyQt5.QtGui as QtGui
-import PyQt5.QtCore as QtCore
+from PyQt5 import QtWidgets, QtGui, QtCore
 import collections
 
-QtCore.pyqtRemoveInputHook()
+QtCore.pyqtRemoveInputHook() # remove this when done debugging
 
 if __name__ == '__main__' :
 	app = QtWidgets.QApplication([])
@@ -16,21 +14,10 @@ def screen_resolution() :
 	width, height = rect.width(), rect.height()
 	return (width, height)
 
-import numpy as np
 import npqt
-import color
-from color import channelsplit, hsv2rgb
-from typing import Callable
 import ptexture
 
-#black = np.zeros((300, 300), dtype=np.uint8)
-rows = 1080
-cols = 1920
-
-default_kwargs = {'R':rows, 'C':cols, 'zoom':4}
 class Main(QtWidgets.QMainWindow) :
-
-	sentinel = object()
 
 	def __init__(self) :
 
@@ -38,45 +25,41 @@ class Main(QtWidgets.QMainWindow) :
 		self.ptextures_dict = collections.defaultdict(dict)
 		self.curr_idx = None
 
-		#self.curr_idx = None
-
-		#self.bases = dict()
 		self.ptextures = list()
-		self.ptextures_args = dict()
 
 		self.createWidgets()
 		self.setupLayout()
 		self.createPixmaps()
 
 		self.show()
-		#print(input())
-		#self.setWindowState(QtCore.Qt.WindowMaximized)
-
-	#def changeEvent(self, event) :
-	#	print(event)
+		#self.setWindowState(QtCore.Qt.WindowMaximized) doesn't work with X11
 
 	def addpTexture(self, ptexture : ptexture.ptexture) :
 
-		#base = ptexture.base
-		#while base is not None :
-		#	self.ptextures.add(base)
-		#	base = base.base
-
+		# 1-to-1 correspondence between lsit of ptextures and comboBox items
 		self.ptextures.append(ptexture)
+		# TODO : move comboBox to side.
 		self.comboBox.addItem(ptexture.name)
 
 	def updateTexture(self, idx) :
 
+		# if index has not changed, don't attempt to change the texture
 		if self.curr_idx == idx :
 			return
+
+		# if comboBox's index doesn't match, change it so it does
+		# comboBox should have a listener so that it calls updateTexture again,
+		# so return mmediately after
 		if self.comboBox.currentIndex() != idx :
 			self.comboBox.setCurrentIndex(idx)
 			return
+
+		# update index into comboBox and ptextures list
 		self.curr_idx = idx
 
 		texture = self.ptextures[idx]
 
-
+		# 1-to-1 correspondence between ptextures_dict a vlayout
 		self.ptextures_dict.clear()
 
 		# clear vlayout
@@ -87,14 +70,11 @@ class Main(QtWidgets.QMainWindow) :
 			widget.deleteLater()
 
 
-		def addButtons(tex) :
+		def add_param_gui(tex) :
 			label = QtWidgets.QLabel(tex.name)
 			self.vlayout.addWidget(label)
 			# move dropdown here
-			print(tex.params)
 			for param in tex.params :
-				print(tex, param)
-				#buttonAction(param, True)()
 
 				hlayout_widget = QtWidgets.QWidget()
 				hlayout = QtWidgets.QHBoxLayout(hlayout_widget)
@@ -103,21 +83,24 @@ class Main(QtWidgets.QMainWindow) :
 				old = QtWidgets.QLabel(str(param.default))
 				new = QtWidgets.QLineEdit()
 
+				# TODO : custom type for this
 				hlayout.addWidget(label)
 				hlayout.addWidget(old)
 				hlayout.addWidget(new)
 
-				#button = QtWidgets.QPushButton(param.name)
-				#button.clicked.connect(buttonAction(param))
 				self.vlayout.addWidget(hlayout.parent())
 
 				# recurse
 				if param.type == ptexture.ptexture :
-					addButtons(param.type(param.default))
+					add_param_gui(param.type(param.default))
 
 
 		def update() :
 
+			# this garbage would be a lot better with a custom type
+			# i hate duck typing
+
+			# corresponds to a key of ptextures_dict
 			texture_name = None
 			for i in range(self.vlayout.count()) :
 				widget = self.vlayout.itemAt(i).widget()
@@ -142,8 +125,9 @@ class Main(QtWidgets.QMainWindow) :
 
 			self.updateImage()
 
-		addButtons(texture)
+		add_param_gui(texture)
 
+		# send GUI params to dict with this button
 		button = QtWidgets.QPushButton('Update')
 		button.clicked.connect(update)
 		update()
@@ -158,14 +142,6 @@ class Main(QtWidgets.QMainWindow) :
 		self.label.setPixmap(pm)
 
 	def createPixmaps(self) :
-
-		self.pixmapStr = dict()
-
-		from functools import partial
-		#import ptexture
-		from ptexture import noisefun
-		import ptexture
-		import color
 
 		noise = ptexture.get_noise()
 		self.addpTexture(noise)
@@ -196,47 +172,31 @@ class Main(QtWidgets.QMainWindow) :
 		widget = QtWidgets.QWidget()
 		widget3 = QtWidgets.QWidget()
 		hlayout = QtWidgets.QHBoxLayout(widget)
-		vlayout = QtWidgets.QVBoxLayout(widget3)
 		self.mainLayout = hlayout
 		#self.setLayout(self.mainLayout)
-		self.setCentralWidget(widget)
+		self.setCentralWidget(hlayout.parent())
 
 		# add to mainLayout
 
-		#vlayout.addWidget(self.new_noise)
 
+		# changer
 		widget2 = QtWidgets.QWidget()
 		changer = QtWidgets.QHBoxLayout(widget2)
 		changer.addWidget(self.prev)
 		changer.addWidget(self.comboBox)
 		changer.addWidget(self.next)
 
+		# changer + image
+		vlayout = QtWidgets.QVBoxLayout(widget3)
 		vlayout.addWidget(changer.parent())
 		vlayout.addWidget(self.label)
 
 		hlayout.addWidget(widget3)
+
 		container = QtWidgets.QWidget()
 		self.vlayout = QtWidgets.QVBoxLayout(container)
 		self.mainLayout.addWidget(container)
-		#container.hide()
 
-	def updatePixmapStr(self, name, set_to=True) :
-
-		if set_to :
-			pm = self.pixmapStr[name]
-			if callable(pm) :
-				pm = pm()
-				self.pixmapStr[name] = pm
-
-
-			self.label.setPixmap(pm)
-			self.pixmap_name = name
-		else :
-
-			pm = self.pixmapStr[name]
-			if callable(pm) :
-				pm = pm()
-				self.pixmapStr[name] = pm
 
 def blur(**kwargs) :
 
