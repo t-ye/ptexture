@@ -137,10 +137,7 @@ def zoomed_smooth(**kwargs) :
 	import numpy as np
 
 	zoom = kwargs['zoom']
-	base = kwargs['base'][0]
-	zoom = kwargs['zoom']
-	fmt = kwargs['fmt']
-	# m assumed 2D
+	base, fmt = kwargs['base']
 
 	from time import time
 
@@ -155,20 +152,26 @@ def zoomed_smooth(**kwargs) :
 	u = (x-1)
 	l = (y-1)
 
-	depth = 1 if base.ndim == 2 else base.shape[2]
+	#depth = 1 if base.ndim == 2 else base.shape[2]
 
-	t = time()
-	v  = (   xf  *    yf ).repeat(depth).reshape(base.shape) * base[x,y] \
-	   + ((1-xf) *    yf ).repeat(depth).reshape(base.shape) * base[u,y] \
-	   + (   xf  * (1-yf)).repeat(depth).reshape(base.shape) * base[x,l] \
-	   + ((1-xf) * (1-yf)).repeat(depth).reshape(base.shape) * base[u,l]
+	#t = time()
+	#v  = (   xf  *    yf ).repeat(depth).reshape(base.shape) * base[x,y] \
+	#   + ((1-xf) *    yf ).repeat(depth).reshape(base.shape) * base[u,y] \
+	#   + (   xf  * (1-yf)).repeat(depth).reshape(base.shape) * base[x,l] \
+	#   + ((1-xf) * (1-yf)).repeat(depth).reshape(base.shape) * base[u,l]
+
+	einsum_str = 'ij,ij->ij' if base.ndim == 2 else 'ij,ijk->ijk'
+
+	v = np.einsum(einsum_str,    xf  *    yf , base[x,y]) \
+	  + np.einsum(einsum_str, (1-xf) *    yf , base[u,y]) \
+    + np.einsum(einsum_str,    xf  * (1-yf), base[x,l]) \
+	  + np.einsum(einsum_str, (1-xf) * (1-yf), base[u,l])
 
 	return (v, fmt)
 
 def get_zs(base) :
 	return ptexture('zs', zoomed_smooth,
 		[('zoom', int, 8),
-		 ('fmt', color.colorformat, 'gray8'),
 		 ('base', ptexture, base.name) # has to go last
 		])
 
