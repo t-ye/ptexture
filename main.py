@@ -48,8 +48,8 @@ class Main(QtWidgets.QMainWindow) :
 			return
 
 		# if comboBox's index doesn't match, change it so it does
-		# comboBox should have a listener so that it calls updateTexture again,
-		# so return mmediately after
+			# comboBox should have a listener so that it calls updateTexture again,
+		# so return immediately after
 		if self.comboBox.currentIndex() != idx :
 			self.comboBox.setCurrentIndex(idx)
 			return
