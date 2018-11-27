@@ -21,7 +21,7 @@ class ptexture_params_gui(QtWidgets.QWidget) :
 	def nextGridRow(self) :
 
 		self.row += 1
-		self.col = self.col_offset
+		self.col = 0
 
 	def __init__(self, ptex : ptexture.ptexture,
 	                   grid : QtWidgets.QGridLayout = None,
@@ -53,6 +53,7 @@ class ptexture_params_gui(QtWidgets.QWidget) :
 
 		#entriesLayoutParent = QtWidgets.QWidget()
 		#self.entriesLayout = QtWidgets.QVBoxLayout(entriesLayoutParent)
+		self.inner_gui = dict()
 
 		for param in self.ptex.params :
 			if param.type == ptexture.ptexture :
@@ -63,7 +64,9 @@ class ptexture_params_gui(QtWidgets.QWidget) :
 				#self.entriesLayout.addWidget(entry)
 				self.addGridWidget(QtWidgets.QLabel(param.name)) # name
 				self.addGridWidget(QtWidgets.QLabel(str(param.default))) # current
-				ptexture_params_gui(param.default, self.grid, (self.row, self.col))
+				self.inner_gui[param.name] = \
+					ptexture_params_gui(ptexture.ptexture(param.default), self.grid,
+					(self.row, self.col_offset+2))
 				self.row = self.grid.rowCount()
 				self.col = self.col_offset
 			else :
@@ -87,25 +90,29 @@ class ptexture_params_gui(QtWidgets.QWidget) :
 
 		for r in range(self.row_offset+1, self.grid.rowCount()) :
 			name = self.grid.itemAtPosition(r, self.col_offset)
+			print(r, self.col_offset, end=' ')
 			if name is None :
+				print(name)
 				continue
 			else :
 				name = name.widget()
+				print(name.text())
 
 			current = self.grid.itemAtPosition(r, self.col_offset+1).widget()
 			new     = self.grid.itemAtPosition(r, self.col_offset+2).widget()
 
-			if issubclass(type(new), ptexture_params_gui) :
-				current.setText(new.dropdown.currentText())
-				inner_dct = new.get()
-				dct.update(inner_dct)
+			if isinstance(new, QtWidgets.QComboBox) :
+				inner_dct = self.inner_gui[name.text()].get()
+				#dct.update(inner_dct)
+				dct[ptex_name][name.text()] = inner_dct
+				current.setText(new.currentText())
 				continue
 
 			if new.text() == '' :
 				new.setText(current.text())
 
 			dct[ptex_name][name.text()] = \
-				ptexture.ptexture(ptex_name).params_dict[name.text()].type(new.next())
+				ptexture.ptexture(ptex_name).params_dict[name.text()].type(new.text())
 
 			current.setText(new.text())
 			new.setText('')
