@@ -23,6 +23,7 @@ class ptexture_params_gui(QtWidgets.QWidget) :
 		self.row += 1
 		self.col = 0
 
+
 	def __init__(self, ptex : ptexture.ptexture,
 	                   grid : QtWidgets.QGridLayout = None,
 										 start : typing.Tuple[int, int] = None) :
@@ -88,14 +89,17 @@ class ptexture_params_gui(QtWidgets.QWidget) :
 		dct = collections.defaultdict(lambda:dict())
 		ptex_name = self.dropdown.currentText()
 
-		for r in range(self.row_offset+1, self.grid.rowCount()) :
+		for r in range(self.grid.rowCount()) :
 			name = self.grid.itemAtPosition(r, self.col_offset)
 			print(r, self.col_offset, end=' ')
-			if name is None :
+			if name is None  :
 				print(name)
 				continue
 			else :
 				name = name.widget()
+				if not isinstance(name, QtWidgets.QLabel) :
+					print()
+					continue
 				print(name.text())
 
 			current = self.grid.itemAtPosition(r, self.col_offset+1).widget()

@@ -4,14 +4,16 @@ import typing
 import color
 import dataclasses
 
+
+
 # all ptextures
 ptextures = dict()
 
-@dataclasses.dataclass(frozen=True)
-class typed_param() :
-	name : str
-	type : type
-	default : Type
+
+
+
+
+
 
 class ptexture() :
 
@@ -64,20 +66,6 @@ class ptexture() :
 				inner_name, inner_kwargs = v.popitem()
 				inner_kwargs = {inner_name:inner_kwargs}
 				kwargs[k] = ptexture(inner_name)(**inner_kwargs)
-
-		return self.texturefun(**kwargs)
-		# defaults updated with override
-		# TODO : enforce placement of ptextures in kwargs
-		#i = 0
-		#for texture_name in kwargs.keys() :
-		#	if texture_name != self.name :
-		#		while i < len(self.params) and self.params[i].type != ptexture :
-		#			i += 1
-		#		if i == len(self.params) :
-		#			break
-		#		param = self.params[i]
-		#		kwargs[self.name][param.name] = \
-		#		ptexture(texture_name)(**kwargs)
 
 		return self.texturefun(**kwargs)
 
