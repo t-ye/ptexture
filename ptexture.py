@@ -3,17 +3,12 @@ from __future__ import annotations # delayed type hint evaluation
 import typing
 import color
 import dataclasses
+import functional
 
 
 
 # all ptextures
 ptextures = dict()
-
-
-
-
-
-
 
 class ptexture() :
 
@@ -72,19 +67,31 @@ class ptexture() :
 	def __str__(self) :
 		return f'ptexture {self.name}'
 
-def noisefun(**kwargs) :
+def ptexture_dec(*params : typing.Tuple[functional.TypedParameter]) :
+	# TODO : function decorator!
+
+
+
+
+
+@ptexture_dec(
+	functional.TypedParameter('R', converter=int, type_hint=int),
+	functional.TypedParameter('C', converter=int, type_hint=int),
+	functional.TypedParameter('fmt', choices=tuple(color.colorformats.keys()),
+	                          converter=color.colorformat,
+														type_hint=color.colorformat)
+)
+def noisefun() :
 
 	import numpy as np
 	from PyQt5.QtGui import QImage
 	import color
 
-	R,C = kwargs['R'], kwargs['C']
-	fmt = kwargs.get('fmt')
 	if fmt is None :
 		fmt = color.gray8
 
 	arr = np.random.randint(256, \
-		size=(kwargs['R'], kwargs['C'], len(fmt.channels)), dtype=np.uint8)
+		size=(R, C, len(fmt.channels)), dtype=np.uint8)
 
 	return (arr, fmt)
 

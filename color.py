@@ -1,4 +1,4 @@
-__all__ = ['channelsplit', 'hsv2rgb', 'colorformats']
+# __all__ = ['channelsplit', 'hsv2rgb', 'colorformats']
 
 def channelsplit(splitter, arr) :
 	"""
