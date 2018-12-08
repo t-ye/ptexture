@@ -18,8 +18,13 @@ class QNamedDictDemo(QtWidgets.QMainWindow) :
 
 	def set(self, param : functional.StringParameter) :
 		clearLayout(self.layout)
-		self.dict_gui = QNamedDict.of(param, self)
+		self.dict_gui = QNamedDict(param, self)
 		self.layout.addWidget(self.dict_gui)
+
+		self.getButton = QtWidgets.QPushButton('Get')
+		self.getButton.clicked.connect(lambda : print(self.get()))
+		self.layout.addWidget(self.getButton)
+
 		self.updateButton = QtWidgets.QPushButton('Update')
 		self.updateButton.clicked.connect(lambda : print(self.update()))
 		self.layout.addWidget(self.updateButton)
@@ -33,8 +38,8 @@ class QNamedDictDemo(QtWidgets.QMainWindow) :
 
 		return self.dict_gui.update()
 
-a = functional.StringParameter('a', ('1', '2', '3'), ())
-b = functional.StringParameter('b', None, ())
+a = functional.StringParameter('a', ('1', '2', '3'))
+b = functional.StringParameter('b', None)
 d = functional.StringParameter('d', None)
 e = functional.StringParameter('e', None)
 f = functional.StringParameter('f', None)
