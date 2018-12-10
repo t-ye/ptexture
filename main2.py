@@ -1,9 +1,11 @@
-from PyQt5 import QtWidgets, QtGui
+from PyQt5 import QtWidgets, QtGui, QtCore
 import qt_ext
 import ptexture
 import npqt
 import functional
 
+
+QtCore.pyqtRemoveInputHook() # remove this when done debugging
 
 class Main(QtWidgets.QMainWindow) :
 

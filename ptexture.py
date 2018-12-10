@@ -53,9 +53,7 @@ def make_ptexture(*params : typing.Tuple[functional.StringParameter]) :
 @make_ptexture(
 	functional.StringParameter('R', parse=int),
 	functional.StringParameter('C', parse=int),
-	functional.StringParameter('fmt',
-		choices    = tuple(color.colorformat.instances.keys()),
-		parse      = lambda choice : color.colorformat.instances[choice])
+	functional.StringParameter('fmt', choices = color.colorformat.instances)
 )
 def noisefun(self) :
 
@@ -94,11 +92,9 @@ def wood_generator(base, **kwargs) :
 
 @make_ptexture(
 	functional.StringParameter('base',
-		choices    = list(ptexture.instances.keys()),
-		parse      = lambda choice : ptexture.instances[choice],
+		choices    = ptexture.instances,
 		get_params = lambda ptex : ptex.params),
-	functional.StringParameter('zoom',
-		parse = int)
+	functional.StringParameter('zoom', parse = int)
 )
 def zoomed_smooth(self) :
 
@@ -127,13 +123,14 @@ def zoomed_smooth(self) :
       + np.einsum(einsum_str,    xf  * (1-yf), self.base.arr[x,l]) \
 	    + np.einsum(einsum_str, (1-xf) * (1-yf), self.base.arr[u,l])
 
-	return (arr, self.base.fmt)
+	return texture(arr, self.base.fmt)
 
 def get_zs(base) :
 	return ptexture('zs', zoomed_smooth,
 		[('zoom', int, 8),
 		 ('base', ptexture, base.name) # has to go last
 		])
+
 
 def turbulence(base, size) :
 
