@@ -4,96 +4,66 @@ import typing
 import color
 import dataclasses
 import functional
+import functools
+import operator
+import numpy as np
 
+@dataclasses.dataclass(frozen=True)
+class texture() :
+	arr : 'np.ndarray'
+	fmt : color.colorformat
 
+	def __iter__(self) :
+		return iter((self.arr, self.fmt))
 
-# all ptextures
-ptextures = dict()
 
 class ptexture() :
+	instances = dict()
 
-	def __new__(cls, name, texturefun = None, kwargs = None) :
-		if name in ptextures :
-			return ptextures[name]
-		else :
-			return super(ptexture, cls).__new__(cls)
+	def __new__(cls, texfun, *params : typing.Tuple[functional.StringParameter]) :
+		if texfun.__name__ in cls.instances :
+			raise ValueError('Attempt to create ptexture with same name as ' + \
+					             cls.instances[texfun.__name__])
+		return super().__new__(cls)
 
-	def __init__(self, name :
-	                    str,
-		                 texturefun :
-	                   	typing.Callable[...,(np.ndarray,color.colorformat)] = None,
-		                 params :
-										 	typing.List[ptexture_param] = None) :
-		if name in ptextures :
-			return
-			#raise ValueError('Ptexture already exists: ' + self.name)
-		self.name = name
-		ptextures[self.name] = self
-		self.texturefun = texturefun
-		#self.params, self.types, self.defaults = zip(*kwargs)
-		self.params = list(map(lambda params : typed_param(*params), params))
-		self.params_dict = {param.name : param for param in self.params}
+	def __init__(self, texfun, *params : typing.Tuple[functional.StringParameter]) :
+		functools.update_wrapper(self, texfun)
+		self.texfun = texfun
+		self.params = params
+		type(self).instances[texfun.__name__] = self
 
-
-	def partial(self, **kwargs) :
-		import copy
-		partialled = copy.deepcopy(self)
-		for param,value in kwargs :
-			if param in partialled.params :
-				try :
-					i = partialled.params.index(param)
-					partialled.params.pop(i)
-					types.pop(i)
-					params.pop(i)
-
-				except ValueError :
-					pass
+	def __call__(self, **kwargs) -> typing.Tuple['np.ndarray', color.colorformat] :
+		for param in self.params :
+			# add laziness here - store result of converter?
+			if isinstance(kwargs[param.name], dict) :
+				kwargs[param.name] = kwargs[param.name].name(**kwargs[param.name])
+			setattr(self.texfun, param.name, kwargs[param.name])
+		return self.texfun(self.texfun)
 
 
-		texture.params.update(kwargs)
-		return texture
-
-	def __call__(self, **kwargs) :
-
-		kwargs = kwargs[self.name]
-		for k,v in kwargs.items() :
-			if isinstance(v, dict) :
-				inner_name, inner_kwargs = v.popitem()
-				inner_kwargs = {inner_name:inner_kwargs}
-				kwargs[k] = ptexture(inner_name)(**inner_kwargs)
-
-		return self.texturefun(**kwargs)
-
-	def __str__(self) :
-		return f'ptexture {self.name}'
-
-def ptexture_dec(*params : typing.Tuple[functional.TypedParameter]) :
+def make_ptexture(*params : typing.Tuple[functional.StringParameter]) :
 	# TODO : function decorator!
+	def decorator(texfun :
+	              typing.Callable[[], typing.Tuple['np.ndarray',
+								color.colorformat]]) :
+		return ptexture(texfun, *params)
+	return decorator
 
 
-
-
-
-@ptexture_dec(
-	functional.TypedParameter('R', converter=int, type_hint=int),
-	functional.TypedParameter('C', converter=int, type_hint=int),
-	functional.TypedParameter('fmt', choices=tuple(color.colorformats.keys()),
-	                          converter=color.colorformat,
-														type_hint=color.colorformat)
+@make_ptexture(
+	functional.StringParameter('R', parse=int),
+	functional.StringParameter('C', parse=int),
+	functional.StringParameter('fmt',
+		choices    = tuple(color.colorformat.instances.keys()),
+		parse      = lambda choice : color.colorformat.instances[choice])
 )
-def noisefun() :
-
-	import numpy as np
-	from PyQt5.QtGui import QImage
-	import color
-
-	if fmt is None :
-		fmt = color.gray8
+def noisefun(self) :
 
 	arr = np.random.randint(256, \
-		size=(R, C, len(fmt.channels)), dtype=np.uint8)
+		size=(self.R, self.C, len(self.fmt.channels)), dtype='uint8')
 
-	return (arr, fmt)
+	return texture(arr, self.fmt)
+
 
 
 def get_noise() :
@@ -122,20 +92,25 @@ def wood_generator(base, **kwargs) :
 
 #wood = ptexture('wood', wood_generator, {'period', 'power', 'size'}, base=noise)
 
-def zoomed_smooth(**kwargs) :
+@make_ptexture(
+	functional.StringParameter('base',
+		choices    = list(ptexture.instances.keys()),
+		parse      = lambda choice : ptexture.instances[choice],
+		get_params = lambda ptex : ptex.params),
+	functional.StringParameter('zoom',
+		parse = int)
+)
+def zoomed_smooth(self) :
 
 	import numpy as np
 
-	zoom = kwargs['zoom']
-	base, fmt = kwargs['base']
+	#zoom = kwargs['zoom']
+	#base, fmt = kwargs['base']
 
-	from time import time
-
-	t = time()
 
 	# get ranges corresonding to the top left (1/zoom)th
 	# portion of the matrix
-	(xf, yf), i = np.modf(np.indices(base.shape[:2]) / zoom)
+	(xf, yf), i = np.modf(np.indices(self.base.arr.shape[:2]) / self.zoom)
 	x, y = i.astype(np.int)
 
 	# up, left (negative indices allowed!)
@@ -145,14 +120,14 @@ def zoomed_smooth(**kwargs) :
 	# If base is 2D, do entrywise multiplication;
 	# else, multiply each depth vector in the 2nd matrix with
 	# each scalar entry in the 1st matrix
-	einsum_str = 'ij,ij->ij' if base.ndim == 2 else 'ij,ijk->ijk'
+	einsum_str = 'ij,ij->ij' if self.base.arr.ndim == 2 else 'ij,ijk->ijk'
 
-	v = np.einsum(einsum_str,    xf  *    yf , base[x,y]) \
-	  + np.einsum(einsum_str, (1-xf) *    yf , base[u,y]) \
-    + np.einsum(einsum_str,    xf  * (1-yf), base[x,l]) \
-	  + np.einsum(einsum_str, (1-xf) * (1-yf), base[u,l])
+	arr = np.einsum(einsum_str,    xf  *    yf , self.base.arr[x,y]) \
+	    + np.einsum(einsum_str, (1-xf) *    yf , self.base.arr[u,y]) \
+      + np.einsum(einsum_str,    xf  * (1-yf), self.base.arr[x,l]) \
+	    + np.einsum(einsum_str, (1-xf) * (1-yf), self.base.arr[u,l])
 
-	return (v, fmt)
+	return (arr, self.base.fmt)
 
 def get_zs(base) :
 	return ptexture('zs', zoomed_smooth,
@@ -178,3 +153,19 @@ def turbulence(base, size) :
 #noise = ptexture(texturefun(noise, ))
 #wood = ptexture(wood_generator, noise)
 
+def textureToImage(tex : texture) :
+
+	from functools import partial
+	import PyQt5.QtGui as QtGui
+	import numpy as np
+
+	arr, fmt = tex
+	if arr.dtype != np.uint8 :
+		arr = arr.astype(np.uint8)
+
+	imgen = partial(QtGui.QImage, arr, arr.shape[1], arr.shape[0])
+
+	# hmm
+	bytesPerPixel = (sum(fmt.channels)+7) // 8
+
+	return imgen(arr.shape[1] * bytesPerPixel, fmt.wrapped)

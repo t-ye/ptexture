@@ -80,7 +80,6 @@ import typing
 from dataclasses import dataclass
 
 
-colorformats = dict()
 """
 A colorformat instance is a lightweight wrapper over a PyQt QImage
 format enum member. Such enum members are no more than numeric
@@ -96,17 +95,18 @@ class colorformat_base():
 
 class colorformat(colorformat_base) :
 
-	def __new__(cls, name, wrapped = None, channels = None) :
-		if name in colorformats :
-			return colorformats[name]
-		else :
-			return super().__new__(cls)
+	instances = dict()
 
-	def __init__(self, name, wrapped = None, channels = None) :
-		if name in colorformats :
-			return
+	def __new__(cls, name, wrapped, channels) :
+		if name in cls.instances :
+			raise ValueError('Attempt to create ptexture with same name as ' + \
+					             cls.instances[texfun.__name__])
+
+		return super().__new__(cls)
+
+	def __init__(self, name, wrapped, channels) :
 		super().__init__(name, wrapped, channels)
-		colorformats[name] = self
+		type(self).instances[name] = self
 
 from dataclasses import dataclass
 

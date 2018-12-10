@@ -1,6 +1,6 @@
 import dataclasses
 import typing
-from .extension import widgetsOf
+from .extension import widgetsOf, clearLayout
 from PyQt5 import QtWidgets
 import functional
 
@@ -17,149 +17,92 @@ class NamedDict(dict) :
 	def __repr__(self) :
 		return f'NamedDict(name={self.name}, {super().__repr__()})'
 
+		dct = dict()
+
 class QNamedDict(QtWidgets.QWidget) :
-	"""
-	GUI for inputting nested dictionaries.
 
-	An example of a dictionary's format:
+		@staticmethod
+		def createSelector(param, parent) :
 
-	root = a :
-  			 b = c
-	  		 d = e :
-					   f = g
-						 h = i
-				 j = k
+			if param.choices :
+				selector = QtWidgets.QComboBox(parent)
+				selector.addItems(param.choices)
+				selector.get = selector.currentText
+				selector.handler = selector.currentTextChanged
+			else :
+				selector = QtWidgets.QLineEdit(parent)
+				selector.get = selector.text
+				selector.handler = selector.editingFinished
 
-	Here, root and d are keys into the NamedDict's with names a and e,
-	respectively.
-
-	"""
-
-	class Subentries(QtWidgets.QWidget) :
+			return selector
 
 		def __init__(self, param, parent) :
 
 			super().__init__(parent)
 
 			self.parent = parent
-			del parent
 			self.param = param
+			del parent
 			del param
 
-			self.layout = QtWidgets.QVBoxLayout(self)
-			for param in self.param.children :
-				self.layout.addWidget(QNamedDict(param, self))
+			self.createLayouts()
+			self.populateHeaderLayout()
+			self.attachSignals()
+
+		def createLayouts(self) :
+
+			self.mainLayout = QtWidgets.QVBoxLayout(self)
+			self.headerLayoutFrame = QtWidgets.QFrame(self)
+			self.headerLayout = QtWidgets.QHBoxLayout(self.headerLayoutFrame)
+
+			self.subdictsLayoutFrame = QtWidgets.QFrame(self)
+			self.subdictsLayout = QtWidgets.QVBoxLayout(self.subdictsLayoutFrame)
+
+			self.mainLayout.addWidget(self.headerLayoutFrame)
+			self.mainLayout.addWidget(self.subdictsLayoutFrame)
+
+		def populateHeaderLayout(self) :
+
+			self.label = QtWidgets.QLabel(self.param.name, self.headerLayoutFrame)
+			self.selector = self.createSelector(self.param, self.headerLayoutFrame)
+
+			self.headerLayout.addWidget(self.label)
+			self.headerLayout.addWidget(self.selector)
+
+		def clearSubdicts(self) :
+			clearLayout(self.subdictsLayout)
+			self.subdicts = []
+
+		def addSubdict(self, subdict) :
+				self.subdictsLayout.addWidget(subdict)
+				self.subdicts.append(subdict)
+
+		def updateSubdictsLayout(self) :
+			self.clearSubdicts()
+
+			params = self.param.get_params(self.get())
+			for param in params :
+				subdict = QNamedDict(param, self.subdictsLayoutFrame)
+				self.addSubdict(subdict)
+
+		def attachSignals(self) :
+			self.selector.handler.connect(self.updateSubdictsLayout)
+			self.updateSubdictsLayout()
 
 		def get(self) :
-			dct = dict()
-			for child in widgetsOf(self.layout) :
-				dct.update(child.get())
+			try :
+				return self.param.parse(self.selector.get())
+			except ValueError :
+				return None
+
+		def getDict(self) :
+
+			if self.subdicts :
+				nd = NamedDict(self.get())
+				for subdict in self.subdicts :
+					nd.update(subdict.getDict())
+				dct = {self.param.name : nd}
+			else :
+				dct = {self.param.name : self.get()}
+
 			return dct
-
-		def update(self) :
-			dct = dict()
-			for child in widgetsOf(self.layout) :
-				dct.update(child.update())
-			return dct
-
-
-	class Entry(QtWidgets.QWidget) :
-
-		class Selector(QtWidgets.QWidget) :
-
-			def __init__(self, param, parent) :
-
-				super().__init__()
-
-				self.parent = parent
-				del parent
-				self.param = param
-				del param
-
-				self.layout = QtWidgets.QHBoxLayout(self)
-				self.layout.setContentsMargins(0,0,0,0)
-				#self.layout.setSpacing(0)
-
-				if self.param.choices :
-					self.selector = QtWidgets.QComboBox(self)
-					self.selector.addItems(self.param.choices)
-					self.selector.get = self.selector.currentText
-					self.selector.set = self.selector.setCurrentText
-				else :
-					self.selector = QtWidgets.QLineEdit(self)
-					self.selector.set = self.selector.setText
-					self.selector.get = self.selector.text
-
-				self.layout.addWidget(self.selector)
-
-			def get(self) :
-				return self.selector.get()
-
-		def __init__(self, param, parent) :
-
-			super().__init__(parent)
-
-			self.parent = parent
-			del parent
-			self.param = param
-
-			self.layout = QtWidgets.QHBoxLayout(self)
-			self.layout.setContentsMargins(0,0,0,0)
-
-			self.label = QtWidgets.QLabel(self.param.name, self)
-			self.selector = QNamedDict.Entry.Selector(param, self)
-			self.old = QtWidgets.QLabel(self.selector.get())
-
-			self.layout.addWidget(self.label)
-			self.layout.addWidget(self.old)
-			self.layout.addWidget(self.selector)
-
-		def get(self) :
-			return self.old.text()
-
-		def update(self) :
-			if self.selector.get() :
-				self.old.setText(self.selector.get())
-				# self.selector.set(self.old.text())
-			return self.get()
-
-	def __init__(self, param, parent) :
-
-		super().__init__(parent)
-
-		self.parent = parent
-		del parent
-		self.param = param
-		del param
-
-		self.layout = QtWidgets.QVBoxLayout(self)
-		margins = self.layout.getContentsMargins()
-		self.layout.setContentsMargins(margins[0], 0, 0, margins[3])
-
-		self.entry = QNamedDict.Entry(self.param, self)
-		self.entries = QNamedDict.Subentries(self.entry, self)
-
-		self.layout.addWidget(self.entry)
-		self.layout.addWidget(self.entries)
-
-	def get(self) :
-		"""
-		Get old dictionary, and do not update children.
-		"""
-		if self.param.children :
-			dct = {self.param.name : NamedDict(self.entry.get())}
-			dct[self.param.name].update(self.entries.get())
-		else :
-			dct = {self.param.name:self.entry.get()}
-		return dct
-
-	def update(self) :
-		"""
-		Update children and get resultant dictionary.
-		"""
-		if self.param.children :
-			dct = {self.param.name : NamedDict(self.entry.update())}
-			dct[self.param.name].update(self.entries.update())
-		else :
-			dct = {self.param.name:self.entry.update()}
-		return dct

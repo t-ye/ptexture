@@ -11,8 +11,8 @@ class QNamedDictDemo(QtWidgets.QMainWindow) :
 
 		# needs a dummy to paint on
 		self.centralWidget = QtWidgets.QWidget()
-		self.layout = QtWidgets.QVBoxLayout(self.centralWidget)
 		self.setCentralWidget(self.centralWidget)
+		self.layout = QtWidgets.QVBoxLayout(self.centralWidget)
 
 		self.show()
 
@@ -32,19 +32,26 @@ class QNamedDictDemo(QtWidgets.QMainWindow) :
 
 	def get(self) :
 
-		return self.dict_gui.get()
+		return self.dict_gui.getDict()
 
 	def update(self) :
 
 		return self.dict_gui.update()
 
-a = functional.StringParameter('a', ('1', '2', '3'))
+
+#a = functional.StringParameter('a', ('1', '2', '3'))
+#b = functional.StringParameter('b', None)
+#d = functional.StringParameter('d', None)
+#e = functional.StringParameter('e', None)
+#f = functional.StringParameter('f', None)
+#c = functional.StringParameter('c', ('4',), (d,e,f))
+#A = functional.StringParameter('A', ('5', '6'), (a,b,c))
+
+
 b = functional.StringParameter('b', None)
-d = functional.StringParameter('d', None)
-e = functional.StringParameter('e', None)
-f = functional.StringParameter('f', None)
-c = functional.StringParameter('c', ('4',), (d,e,f))
-A = functional.StringParameter('A', ('5', '6'), (a,b,c))
+c = functional.StringParameter('c', None)
+a = functional.StringParameter(name='a', choices=['0', '1'], parse=int, \
+		get_params= lambda i : [[b],[c]][i])
 
 if __name__ == '__main__' :
 
@@ -54,6 +61,6 @@ if __name__ == '__main__' :
 	app = QtWidgets.QApplication([])
 	if to_demo == 'QNamedDict' :
 		window = QNamedDictDemo()
-		window.set(A)
+		window.set(a)
 
 	app.exec_()

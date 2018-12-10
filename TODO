@@ -1,0 +1,4 @@
+refactor subentries as a part of header???
+
+maybe coalesce into a single class...
+https://stackoverflow.com/questions/46351933/pyqt-nesting-widgets-and-layouts-in-multiple-levels
