@@ -27,10 +27,13 @@ class QNamedDict(QtWidgets.QWidget) :
 			if param.choices :
 				selector = QtWidgets.QComboBox(parent)
 				selector.addItems(param.choices)
+				if param.default in param.choices :
+					selector.setText(param.default)
 				selector.get = selector.currentText
 				selector.handler = selector.currentTextChanged
 			else :
 				selector = QtWidgets.QLineEdit(parent)
+				selector.setText(param.default)
 				selector.get = selector.text
 				selector.handler = selector.editingFinished
 
@@ -45,9 +48,14 @@ class QNamedDict(QtWidgets.QWidget) :
 			del parent
 			del param
 
-			self.createLayouts()
-			self.populateHeaderLayout()
-			self.attachSignals()
+			init_ordered = [
+					self.createLayouts,
+					self.populateHeaderLayout,
+					self.attachSignals
+			]
+
+			for initer in init_ordered :
+				initer()
 
 		def createLayouts(self) :
 
