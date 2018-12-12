@@ -35,6 +35,8 @@ class ptexture() :
 	def __call__(self, **kwargs) -> typing.Tuple['np.ndarray', color.colorformat] :
 		for param in self.params :
 			# add laziness here - store result of converter?
+			if kwargs[param.name] is None :
+				raise ValueError('Got nothing for ' + str(param.name))
 			if isinstance(kwargs[param.name], dict) :
 				kwargs[param.name] = kwargs[param.name].name(**kwargs[param.name])
 			setattr(self.texfun, param.name, kwargs[param.name])
@@ -88,8 +90,6 @@ def wood_generator(base, **kwargs) :
 	d = np.sqrt(x**2 + y**2) + power * turbulence(base, size) / 256
 	return 128 * np.abs(np.sin(2 * period * d * np.pi))
 
-#wood = ptexture('wood', wood_generator, {'period', 'power', 'size'}, base=noise)
-
 @make_ptexture(
 	functional.StringParameter('base',
 		choices    = ptexture.instances,
@@ -97,13 +97,6 @@ def wood_generator(base, **kwargs) :
 	functional.StringParameter('zoom', parse = int)
 )
 def zoomed_smooth(self) :
-
-	import numpy as np
-
-	#zoom = kwargs['zoom']
-	#base, fmt = kwargs['base']
-
-
 	# get ranges corresonding to the top left (1/zoom)th
 	# portion of the matrix
 	(xf, yf), i = np.modf(np.indices(self.base.arr.shape[:2]) / self.zoom)
@@ -125,25 +118,25 @@ def zoomed_smooth(self) :
 
 	return texture(arr, self.base.fmt)
 
-def get_zs(base) :
-	return ptexture('zs', zoomed_smooth,
-		[('zoom', int, 8),
-		 ('base', ptexture, base.name) # has to go last
-		])
+@make_ptexture(
+	functional.StringParameter('base',
+		choices    = ptexture.instances,
+		get_params = lambda ptex : ptex.params),
+	functional.StringParameter('initial_zoom', parse = int),
+	functional.StringParameter('zoom_function',
+		choices    = ptexture.instances)
+)
+def turbulence(self) :
 
+	v = np.zeros_like(self.base.arr,dtype=np.float)
+	zoom = self.initial_zoom
 
-def turbulence(base, size) :
+	while zoom >= 1 :
+		#v += self.zoom_function(base=self.base, zoom=zoom).arr * zoom
+		v += zoomed_smooth(base=self.base, zoom=zoom).arr * zoom
+		zoom /= 2
 
-	import numpy as np
-
-	v = np.zeros_like(base,dtype=np.float)
-	isize = size
-
-	while size >= 1 :
-		v += zoomed_smooth(base, size) * size
-		size /= 2
-
-	return v / (2*isize)
+	return texture(v / (2*self.initial_zoom), self.base.fmt)
 
 #turb = ptexture('turbulence', turbulence, {'size'}, {'size':64}, noise)
 
